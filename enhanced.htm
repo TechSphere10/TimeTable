@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Timetable - MIT Mysore</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border: 2px solid #000;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 2px solid #000;
+        }
+        
+        .logo-left, .logo-right {
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            text-align: center;
+        }
+        
+        .logo-left img, .logo-right img {
+            width: 90px;
+            height: 90px;
+            object-fit: cover;
+        }
+        
+        .header-text {
+            flex: 1;
+            text-align: center;
+            padding: 0 20px;
+        }
+        
+        .header-text h1 {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .header-text p {
+            font-size: 12px;
+            margin: 2px 0;
+        }
+        
+        .class-info {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            background: #ffffcc;
+            border-bottom: 1px solid #000;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .timetable {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .timetable th, .timetable td {
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: center;
+            font-size: 12px;
+        }
+        
+        .timetable th {
+            background: #e6e6e6;
+            font-weight: bold;
+        }
+        
+        .day-header {
+            background: #cccccc;
+            font-weight: bold;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+        }
+        
+        .time-header {
+            background: #e6e6e6;
+            font-size: 10px;
+            line-height: 1.2;
+        }
+        
+        .subject-cell {
+            background: #f0f8ff;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .subject-cell:hover {
+            background: #e0f0ff;
+        }
+        
+        .break-cell {
+            background: #ffffcc;
+            font-weight: bold;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+        }
+        
+        .lunch-break {
+            background: #ffeecc;
+            font-weight: bold;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background: white;
+            margin: 15% auto;
+            padding: 20px;
+            border: 2px solid #000;
+            width: 400px;
+            border-radius: 5px;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .close {
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .btn-primary { background: #007bff; color: white; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: #28a745;
+            color: white;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .save-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #fd7e14;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <a href="timetable-new.htm" class="back-button">← Back</a>
+    <button class="save-button" onclick="saveTimetable()">💾 Save</button>
+    
+    <div id="timetablesContainer"></div>
+        
+
+    
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Subject</h3>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="form-group">
+                <label for="subjectName">Subject Name:</label>
+                <input type="text" id="subjectName" placeholder="Enter subject name">
+            </div>
+            <div class="form-group">
+                <label for="teacherName">Teacher Name:</label>
+                <input type="text" id="teacherName" placeholder="Enter teacher name">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-primary" onclick="saveSubject()">Save</button>
+                <button class="btn btn-danger" onclick="clearSubject()">Clear</button>
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentCell = null;
+        let timetableData = null;
+
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const storedData = localStorage.getItem('timetableData');
+            if (storedData) {
+                timetableData = JSON.parse(storedData);
+                generateMultipleTimetables();
+            } else {
+                // Fallback to single timetable
+                generateSingleTimetable();
+            }
+        });
+
+        function generateMultipleTimetables() {
+            const container = document.getElementById('timetablesContainer');
+            const sections = timetableData.sections || ['5A'];
+            const subjects = timetableData.subjects || [];
+            const days = timetableData.days || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+            const timeSlots = timetableData.timeSlots || [];
+            
+            container.innerHTML = '';
+            
+            sections.forEach((section, index) => {
+                const timetableHtml = createTimetableHTML(section, subjects, days, timeSlots, index);
+                container.innerHTML += timetableHtml;
+                
+                // Add page break except for last timetable
+                if (index < sections.length - 1) {
+                    container.innerHTML += '<div style="page-break-after: always; margin: 40px 0;"></div>';
+                }
+            });
+        }
+
+        function generateSingleTimetable() {
+            const container = document.getElementById('timetablesContainer');
+            const defaultSubjects = [
+                {name: 'TOC', teachers: 'Dr. Smith'},
+                {name: 'CNS', teachers: 'Prof. Johnson'},
+                {name: 'ST', teachers: 'Dr. Brown'},
+                {name: 'DMDW', teachers: 'Prof. Davis'},
+                {name: 'ML', teachers: 'Dr. Wilson'},
+                {name: 'AI', teachers: 'Prof. Taylor'}
+            ];
+            const defaultTimeSlots = [
+                {start: '09:00am', end: '10:00am', type: 'period'},
+                {start: '10:00am', end: '11:00am', type: 'period'},
+                {label: 'SHORT BREAK', type: 'break'},
+                {start: '11:15am', end: '12:15pm', type: 'period'},
+                {start: '12:15pm', end: '01:15pm', type: 'period'},
+                {label: 'LUNCH BREAK', type: 'break'},
+                {start: '02:00pm', end: '03:00pm', type: 'period'},
+                {start: '03:00pm', end: '04:00pm', type: 'period'}
+            ];
+            
+            container.innerHTML = createTimetableHTML('5A', defaultSubjects, ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], defaultTimeSlots, 0);
+        }
+
+        function createTimetableHTML(section, subjects, days, timeSlots, index) {
+            const timeHeaders = timeSlots.filter(slot => slot.type === 'period' || slot.type === 'break')
+                .map(slot => {
+                    if (slot.type === 'break') {
+                        return `<th class="time-header">${slot.start || ''}<br>to<br>${slot.end || ''}</th>`;
+                    } else {
+                        return `<th class="time-header">${slot.start}<br>to<br>${slot.end}</th>`;
+                    }
+                }).join('');
+
+            const dayRows = days.map(day => {
+                const cells = timeSlots.filter(slot => slot.type === 'period' || slot.type === 'break')
+                    .map(slot => {
+                        if (slot.type === 'break') {
+                            const breakClass = slot.label.includes('LUNCH') ? 'lunch-break' : 'break-cell';
+                            const breakText = slot.label.includes('LUNCH') ? 'LUNCH BREAK' : 'SHORT<br>BREAK';
+                            return `<td class="${breakClass}">${breakText}</td>`;
+                        } else {
+                            return `<td class="subject-cell" onclick="editSubject(this)"></td>`;
+                        }
+                    }).join('');
+                
+                return `<tr><td class="day-header">${day.toUpperCase()}</td>${cells}</tr>`;
+            }).join('');
+
+            const subjectRows = subjects.map(subject => {
+                const code = subject.name.substring(0, 4).toUpperCase();
+                const initials = subject.teachers ? subject.teachers.split(' ').map(n => n[0]).join('') : 'TBA';
+                return `
+                    <tr>
+                        <td onclick="editSubjectDetail(this, 0)">${code}</td>
+                        <td onclick="editSubjectDetail(this, 1)">${subject.name}</td>
+                        <td onclick="editSubjectDetail(this, 2)">${code}</td>
+                        <td onclick="editSubjectDetail(this, 3)">${subject.teachers || 'TBA'}</td>
+                        <td onclick="editSubjectDetail(this, 4)">${initials}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            return `
+                <div class="container">
+                    <div class="header">
+                        <div class="logo-left">
+                            <img src="left-logo.png" alt="MIT Logo">
+                        </div>
+                        <div class="header-text">
+                            <h1>🎓 MAHARAJA INSTITUTE OF TECHNOLOGY, MYSORE</h1>
+                            <p>📍 BELAWADI, SRIRANGAPATNA TALUK, MANDYA-571477</p>
+                            <p><strong>💻 DEPARTMENT OF INFORMATION SCIENCE AND ENGINEERING</strong></p>
+                        </div>
+                        <div class="logo-right">
+                            <img src="right-logo.png" alt="ISE Logo">
+                        </div>
+                    </div>
+                    
+                    <div class="class-info">
+                        <span>📚 Class: <span onclick="editField(this, 'Class')">${section}</span></span>
+                        <span>🚪 Room Number: <span onclick="editField(this, 'Room')">_______</span></span>
+                        <span>📅 Academic Year: <span onclick="editField(this, 'Year')">2024-25</span></span>
+                    </div>
+                    
+                    <table class="timetable">
+                        <thead>
+                            <tr>
+                                <th rowspan="2">Day/Period</th>
+                                ${timeHeaders}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${dayRows}
+                        </tbody>
+                    </table>
+                    
+                    <table class="timetable" style="margin-top: 20px;">
+                        <thead>
+                            <tr>
+                                <th>SUB CODE</th>
+                                <th>SUBJECT TITLE</th>
+                                <th>SUB IN SHORT</th>
+                                <th>FACULTY</th>
+                                <th>FACULTY INITIALS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${subjectRows}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function editSubject(cell) {
+            currentCell = cell;
+            const content = cell.innerHTML;
+            const parts = content.split('<br>');
+            const subject = parts[0] || '';
+            const teacher = parts[1] || '';
+            
+            document.getElementById('subjectName').value = subject;
+            document.getElementById('teacherName').value = teacher;
+            document.getElementById('editModal').style.display = 'block';
+        }
+
+        function saveSubject() {
+            if (currentCell) {
+                const subject = document.getElementById('subjectName').value.trim();
+                const teacher = document.getElementById('teacherName').value.trim();
+                
+                if (subject || teacher) {
+                    currentCell.innerHTML = subject + (teacher ? '<br>' + teacher : '');
+                } else {
+                    currentCell.innerHTML = '';
+                }
+            }
+            closeModal();
+        }
+
+        function clearSubject() {
+            if (currentCell) {
+                currentCell.innerHTML = '';
+            }
+            closeModal();
+        }
+
+        function closeModal() {
+            document.getElementById('editModal').style.display = 'none';
+            currentCell = null;
+        }
+
+        function editField(element, fieldName) {
+            const newValue = prompt(`Enter ${fieldName}:`, element.textContent.trim());
+            if (newValue !== null) {
+                element.textContent = newValue || '_______';
+            }
+        }
+        
+        function editSubjectDetail(cell, type) {
+            const fieldNames = ['Subject Code', 'Subject Title', 'Subject Short', 'Faculty Name', 'Faculty Initials'];
+            const newValue = prompt(`Enter ${fieldNames[type]}:`, cell.textContent.trim());
+            if (newValue !== null) {
+                cell.textContent = newValue;
+            }
+        }
+
+        function saveTimetable() {
+            const content = document.documentElement.outerHTML;
+            const blob = new Blob([content], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'enhanced-timetable.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            alert('Timetable saved successfully!');
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('editModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>

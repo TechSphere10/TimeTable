@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enhanced Options Page</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+    
+    .college-header {
+      background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+      color: white;
+      padding: 20px 0;
+      box-shadow: 0 4px 20px rgba(52, 152, 219, 0.3);
+    }
+    
+    .header-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    
+    .logo {
+      height: 80px;
+      width: auto;
+    }
+    
+    .college-info {
+      text-align: center;
+      flex: 1;
+      margin: 0 40px;
+    }
+    
+    .college-info h1 {
+      font-size: 2.2rem;
+      margin: 0;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+    
+    .college-info h2 {
+      font-size: 1.8rem;
+      margin: 5px 0;
+      color: #ecf0f1;
+    }
+    
+    .college-info p {
+      font-size: 1rem;
+      margin: 10px 0 0 0;
+      color: #bdc3c7;
+    }
+    .container {
+      display: flex;
+      gap: 2rem;
+      justify-content: center;
+      align-items: center;
+      flex: 1;
+      padding: 40px 20px;
+    }
+    .tab {
+      background-color: #2c3e50;
+      color: #fff;
+      padding: 1rem 1.8rem;
+      border-radius: 15px;
+      text-align: center;
+      text-decoration: none;
+      font-size: 1.1rem;
+      font-weight: bold;
+      width: 200px;
+      transition: transform 0.3s, box-shadow 0.3s, background 0.3s;
+      animation: dance 2s infinite alternate;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      border: 2px solid rgba(255,255,255,0.3);
+      backdrop-filter: blur(5px);
+    }
+    .tab:first-child {
+      background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    }
+    .tab:nth-child(2) {
+      background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    }
+    .tab:last-child {
+      background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+    }
+    .tab::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(120deg, rgba(255,255,255,0.2), rgba(255,255,255,0.6), rgba(255,255,255,0.2));
+      transform: rotate(25deg) translateX(-100%);
+      transition: transform 0.5s;
+    }
+    .tab:hover::before {
+      transform: rotate(25deg) translateX(100%);
+    }
+    .tab:hover {
+      transform: scale(1.08);
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.3);
+    }
+    .tab:first-child:hover {
+      background: linear-gradient(135deg, #5dade2 0%, #3498db 100%);
+      box-shadow: 0 8px 25px rgba(52, 152, 219, 0.4);
+    }
+    .tab:nth-child(2):hover {
+      background: linear-gradient(135deg, #ec7063 0%, #e74c3c 100%);
+      box-shadow: 0 8px 25px rgba(231, 76, 60, 0.4);
+    }
+    .tab:last-child:hover {
+      background: linear-gradient(135deg, #58d68d 0%, #27ae60 100%);
+      box-shadow: 0 8px 25px rgba(39, 174, 96, 0.4);
+    }
+    .tab:active {
+      transform: scale(0.98);
+      box-shadow: 0 0 15px rgba(0, 64, 133, 0.6);
+    }
+
+    @keyframes dance {
+      0% { transform: translateY(0px); }
+      25% { transform: translateY(-4px); }
+      50% { transform: translateY(4px); }
+      75% { transform: translateY(-4px); }
+      100% { transform: translateY(0px); }
+    }
+
+    .particle {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: rgba(52, 152, 219, 0.6);
+      border-radius: 50%;
+      animation: float 5s infinite linear;
+      box-shadow: 0 0 10px rgba(52, 152, 219, 0.3);
+    }
+    @keyframes float {
+      0% { transform: translateY(0) translateX(0); opacity: 1; }
+      50% { transform: translateY(-200px) translateX(50px); opacity: 0.5; }
+      100% { transform: translateY(-400px) translateX(-50px); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <header class="college-header">
+    <div class="header-content">
+      <div class="logo-section">
+        <img src="left-logo.png" alt="College Logo" class="logo">
+      </div>
+      <div class="college-info">
+        <h1>MAHARAJA INSTITUTE OF TECHNOLOGY</h1>
+        <h2>MYSORE</h2>
+        <p>Autonomous Institution Affiliated to VTU</p>
+      </div>
+      <div class="logo-section">
+        <img src="right-logo.png" alt="VTU Logo" class="logo">
+      </div>
+    </div>
+  </header>
+  
+  <div class="container">
+    <a href="subject.htm" class="tab" id="subjectLink">Subject Database</a>
+    <a href="timetable-new.htm" class="tab" id="timetableLink">Timetable Generator</a>
+    <a href="faculty.htm" class="tab" id="facultyLink">Faculty Management</a>
+  </div>
+
+  <script>
+    // Get department from URL or localStorage
+    const urlParams = new URLSearchParams(window.location.search);
+    const dept = urlParams.get('dept') || localStorage.getItem('currentDepartment') || 'ISE';
+    
+    // Update links to include department parameter
+    document.getElementById('subjectLink').href = `subject.htm?dept=${encodeURIComponent(dept)}`;
+    document.getElementById('timetableLink').href = `timetable-new.htm?dept=${encodeURIComponent(dept)}`;
+    document.getElementById('facultyLink').href = `faculty.htm?dept=${encodeURIComponent(dept)}`;
+    
+    for(let i=0;i<30;i++){
+      const p = document.createElement('div');
+      p.classList.add('particle');
+      p.style.left = Math.random()*window.innerWidth + 'px';
+      p.style.top = Math.random()*window.innerHeight + 'px';
+      p.style.width = p.style.height = (Math.random()*6+3)+'px';
+      p.style.animationDuration = (Math.random()*4+3)+'s';
+      document.body.appendChild(p);
+    }
+  </script>
+</body>
+</html>
