@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enhanced Options Page</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to bottom, #f8fafc 0%, #e2e8f0 25%, #f1f5f9 50%, #ffffff 100%);
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      overflow-x: hidden;
+    }
+
+    /* Header Section */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between; 
+      padding: 5px 10px;
+      background: linear-gradient(135deg, #004085 0%, #003366 50%, #004085 100%);
+      border-bottom: 2px solid #002244;
+      flex-wrap: wrap;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 3px 15px rgba(0, 64, 133, 0.4);
+      width: 100%;
+      box-sizing: border-box;
+      position: fixed;
+      top: 0;
+      z-index: 1000;
+    }
+    .logo-left, .logo-right {
+      width: 80px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      text-align: center;
+    }
+    
+    .logo-left img, .logo-right img {
+      width: 70px;
+      height: 70px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.3);
+    }
+    .header-text {
+      text-align: center;
+      flex: 1;
+      min-width: 280px;
+    }
+    .header-text h1 {
+      margin: 2px 0;
+      font-weight: bold;
+      font-size: 16px;
+      line-height: 1.2;
+    }
+    .header-text h1:nth-child(2) {
+      font-size: 20px;
+      margin: 3px 0;
+    }
+    .green { color: white; }
+    .orange { color: white; }
+    .container {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.5rem;
+      margin-top: 84px;
+      padding: 0 2rem;
+    }
+    .tab {
+      background-color: #2c3e50;
+      color: #fff;
+      padding: 1rem 1.2rem;
+      border-radius: 15px;
+      text-align: center;
+      text-decoration: none;
+      font-size: 1rem;
+      font-weight: bold;
+      transition: transform 0.3s, box-shadow 0.3s, background 0.3s;
+      animation: dance 2s infinite alternate;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      border: 2px solid rgba(255,255,255,0.3);
+      backdrop-filter: blur(5px);
+    }
+    .tab:nth-child(1) {
+      background-color: #14596b;
+    }
+    .tab:nth-child(2) {
+      background-color: #b7610b;
+    }
+    .tab:nth-child(3) {
+      background-color: #0b9719;
+    }
+    .tab:nth-child(4) {
+      background-color: #077594;
+    }
+    .tab::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(120deg, rgba(255,255,255,0.2), rgba(255,255,255,0.6), rgba(255,255,255,0.2));
+      transform: rotate(25deg) translateX(-100%);
+      transition: transform 0.5s;
+    }
+    .tab:hover::before {
+      transform: rotate(25deg) translateX(100%);
+    }
+    .tab:hover {
+      transform: scale(1.08);
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.3);
+    }
+    .tab:nth-child(1):hover {
+      background-color: #5dade2;
+    }
+    .tab:nth-child(2):hover {
+      background-color: #58d68d;
+    }
+    .tab:nth-child(3):hover {
+      background-color: #f7dc6f;
+    }
+    .tab:nth-child(4):hover {
+      background-color: #a569bd;
+    }
+    .tab:active {
+      transform: scale(0.98);
+      box-shadow: 0 0 15px rgba(0, 64, 133, 0.6);
+    }
+
+    @keyframes dance {
+      0% { transform: translateY(0px); }
+      25% { transform: translateY(-4px); }
+      50% { transform: translateY(4px); }
+      75% { transform: translateY(-4px); }
+      100% { transform: translateY(0px); }
+    }
+
+    .particle {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: rgba(0, 64, 133, 0.5);
+      border-radius: 50%;
+      animation: float 5s infinite linear;
+    }
+    @keyframes float {
+      0% { transform: translateY(0) translateX(0); opacity: 1; }
+      50% { transform: translateY(-200px) translateX(50px); opacity: 0.5; }
+      100% { transform: translateY(-400px) translateX(-50px); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div class="logo-left">
+      <img src="left-logo.png" alt="MET Logo">
+    </div>
+    <div class="header-text">
+      <h1 class="green">🎓 Maharaja Education Trust (R), Mysuru</h1>
+      <h1 class="orange">🏛️ Maharaja Institute of Technology, Mysore</h1>
+      <h1 class="green">An Autonomous Institution Affiliated to VTU, Belagavi</h1>
+      <h1 class="orange">✅ Approved by AICTE, New Delhi | Recognized by Government of Karnataka</h1>
+    </div>
+    <div class="logo-right">
+      <img src="right-logo.png" alt="Circle Logo">
+    </div>
+  </div>
+
+  <div class="container">
+    <a href="subject.htm" class="tab" id="subjectLink">📚 Subject Database</a>
+    <a href="#" class="tab" id="facultyLink">👨‍🏫 Faculty Core</a>
+    <a href="timetable-new.htm" class="tab" id="timetableLink">📅 Timetable Generator</a>
+    <a href="#" class="tab" id="vaultLink">🗂️ Timetable Vault</a>
+  </div>
+
+  <script>
+    // Get department from URL or localStorage
+    const urlParams = new URLSearchParams(window.location.search);
+    const dept = urlParams.get('dept') || localStorage.getItem('currentDepartment');
+    
+    // Get department from localStorage if not in URL
+    if (!dept) {
+      const storedDept = localStorage.getItem('currentDepartment');
+      if (storedDept) {
+        window.location.href = `page.htm?dept=${encodeURIComponent(storedDept)}`;
+      }
+    }
+    
+    // Update links to include department parameter
+    document.getElementById('subjectLink').href = `subject.htm?dept=${encodeURIComponent(dept)}`;
+    document.getElementById('facultyLink').href = `faculty.htm?dept=${encodeURIComponent(dept)}`;
+    document.getElementById('timetableLink').href = `timetable-new.htm?dept=${encodeURIComponent(dept)}`;
+    document.getElementById('vaultLink').href = `vault.htm?dept=${encodeURIComponent(dept)}`;
+    
+    for(let i=0;i<30;i++){
+      const p = document.createElement('div');
+      p.classList.add('particle');
+      p.style.left = Math.random()*window.innerWidth + 'px';
+      p.style.top = Math.random()*window.innerHeight + 'px';
+      p.style.width = p.style.height = (Math.random()*6+3)+'px';
+      p.style.animationDuration = (Math.random()*4+3)+'s';
+      document.body.appendChild(p);
+    }
+  </script>
+</body>
+</html>

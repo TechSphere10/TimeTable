@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Test Supabase Connection</title>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<h1>Supabase Connection Test</h1>
+<button onclick="testConnection()">Test Connection</button>
+<button onclick="testInsertSubject()">Test Insert Subject</button>
+<button onclick="testInsertFaculty()">Test Insert Faculty</button>
+<div id="result" style="margin-top:20px;padding:10px;background:#f0f0f0;"></div>
+
+<script>
+const SUPABASE_URL='https://bkmzyhroignpjebfpqug.supabase.co';
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrbXp5aHJvaWducGplYmZwcXVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0MjA1NDUsImV4cCI6MjA3Mjk5NjU0NX0.ICE2eYzFZvz0dtNpAa5YlJTZD-idc2J76wn1ZeHwwck';
+const supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
+async function testConnection(){
+const result=document.getElementById('result');
+result.innerHTML='Testing connection...';
+try{
+const{data,error}=await supabase.from('subjects').select('count');
+if(error)throw error;
+result.innerHTML='✅ Connection successful! Subjects table exists.';
+}catch(err){
+result.innerHTML='❌ Error: '+err.message;
+}
+}
+
+async function testInsertSubject(){
+const result=document.getElementById('result');
+result.innerHTML='Testing subject insert...';
+try{
+const{data,error}=await supabase.from('subjects').insert([{
+department:'TEST',
+academic_year:'2024-25',
+year:1,
+semester:1,
+name:'Test Subject',
+credits:3,
+type:'theory',
+weekly_hours:3
+}]).select();
+if(error)throw error;
+result.innerHTML='✅ Subject inserted! ID: '+data[0].id;
+}catch(err){
+result.innerHTML='❌ Error: '+err.message;
+}
+}
+
+async function testInsertFaculty(){
+const result=document.getElementById('result');
+result.innerHTML='Testing faculty insert...';
+try{
+const{data,error}=await supabase.from('faculty').insert([{
+department:'TEST',
+name:'Test Faculty',
+initials:'TF',
+designation:'professor'
+}]).select();
+if(error)throw error;
+result.innerHTML='✅ Faculty inserted! ID: '+data[0].id;
+}catch(err){
+result.innerHTML='❌ Error: '+err.message;
+}
+}
+</script>
+</body>
+</html>

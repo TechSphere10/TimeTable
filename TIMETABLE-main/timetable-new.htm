@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Timetable Generator</title>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+:root{--primary:#004085;--danger:#dc3545;--light-grey:#f8f9fa;--info:#17a2b8;--medium-blue:#0069d9;--success:#28a745;--warning:#ffc107;--text:#004085;--muted:#666;--border:#004085;--card:white}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(135deg,rgba(248,249,250,0.95) 0%,rgba(233,236,239,0.9) 100%);color:var(--primary);font:400 14px/1.5 'Segoe UI',Arial,sans-serif;min-height:100vh;padding-top:90px}
+.container{max-width:100%;margin:0;padding:0}
+.header{display:flex;align-items:center;justify-content:space-between;padding:5px 0;margin:0;background:linear-gradient(135deg,#004085 0%,#003366 50%,#004085 100%);border-bottom:2px solid #002244;flex-wrap:wrap;backdrop-filter:blur(20px);box-shadow:0 3px 15px rgba(0,64,133,0.4);width:100vw;position:fixed;top:0;left:0;right:0;z-index:1000}
+.logo-left,.logo-right{width:80px;height:80px;display:flex;align-items:center;justify-content:center;font-size:12px;text-align:center}
+.logo-left img,.logo-right img{width:70px;height:70px;object-fit:cover;border-radius:50%;border:2px solid rgba(255,255,255,0.3)}
+.header-text{text-align:center;flex:1;min-width:280px}
+.header-text h1{margin:2px 0;font-weight:bold;font-size:16px;line-height:1.2}
+.header-text h1:nth-child(2){font-size:20px;margin:3px 0}
+.green{color:white}
+.orange{color:white}
+.main-grid{display:flex;flex-direction:column;max-width:100%;margin:0;padding:20px;gap:20px}
+.top-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:15px}
+.content-area{width:100%}
+.card{background:linear-gradient(145deg,rgba(255,255,255,0.98) 0%,rgba(248,252,255,0.95) 100%);border:none;border-radius:6px;padding:8px;box-shadow:0 4px 12px rgba(0,64,133,0.06),0 2px 8px rgba(0,0,0,0.03),inset 0 1px 0 rgba(255,255,255,0.9);backdrop-filter:blur(15px);position:relative;overflow:hidden;margin:0;border-left:2px solid var(--primary)}
+.card::before{content:'';position:absolute;top:0;left:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--primary) 0%,var(--info) 50%,var(--success) 100%)}
+.card::after{content:'';position:absolute;top:0;right:0;bottom:0;width:1px;background:linear-gradient(180deg,rgba(0,64,133,0.06) 0%,rgba(23,162,184,0.12) 50%,rgba(40,167,69,0.06) 100%)}
+.card h2{margin:0 0 8px;font-size:17px;color:var(--primary);font-weight:700;text-align:left;padding:8px 12px;background:linear-gradient(135deg,rgba(0,64,133,0.05) 0%,rgba(23,162,184,0.03) 50%,rgba(40,167,69,0.02) 100%);border-radius:6px;border:1px solid rgba(0,64,133,0.08);position:relative;margin:-6px -6px 8px -6px;box-shadow:0 2px 8px rgba(0,64,133,0.04)}
+.card h2::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--primary) 0%,var(--info) 50%,var(--success) 100%);border-radius:8px 8px 0 0}
+.card h2::after{content:'';position:absolute;bottom:-1px;left:15px;width:40px;height:2px;background:linear-gradient(90deg,var(--info),var(--success));border-radius:2px;box-shadow:0 1px 4px rgba(23,162,184,0.2)}
+label{display:block;font-size:11px;color:var(--primary);margin:4px 0 2px;font-weight:600;text-transform:uppercase;letter-spacing:0.2px;position:relative;padding-left:16px}
+label::before{content:attr(data-icon);position:absolute;left:0;top:0;font-size:12px;color:var(--info)}
+input,select{width:100%;padding:6px 8px;border:1px solid rgba(0,64,133,0.12);background:linear-gradient(135deg,rgba(255,255,255,0.98) 0%,rgba(248,252,255,0.95) 100%);color:var(--primary);border-radius:4px;font-size:12px;outline:none;transition:all 0.3s ease;box-shadow:0 1px 4px rgba(0,0,0,0.04),inset 0 1px 0 rgba(255,255,255,0.8)}
+input:focus,select:focus{border-color:var(--info);box-shadow:0 0 0 2px rgba(23,162,184,.1),0 4px 15px rgba(0,64,133,0.08),inset 0 1px 0 rgba(255,255,255,0.9);transform:translateY(-1px);background:linear-gradient(135deg,rgba(255,255,255,1) 0%,rgba(248,252,255,0.98) 100%)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:14px 28px;border:none;background:linear-gradient(135deg,var(--primary) 0%,#003366 100%);color:white;border-radius:12px;cursor:pointer;font-size:14px;font-weight:700;text-decoration:none;transition:all 0.3s ease;box-shadow:0 4px 15px rgba(0,64,133,0.3);width:100%;margin-top:8px}
+.btn:hover{background:linear-gradient(135deg,#003366 0%,var(--primary) 100%);transform:translateY(-3px);box-shadow:0 8px 25px rgba(0,64,133,0.4)}
+.btn:active{transform:translateY(-1px)}
+.btn-success{background:linear-gradient(135deg,var(--success) 0%,#1e7e34 100%);box-shadow:0 4px 15px rgba(40,167,69,0.3)}
+.btn-success:hover{background:linear-gradient(135deg,#1e7e34 0%,var(--success) 100%);box-shadow:0 8px 25px rgba(40,167,69,0.4)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:4px 0;position:relative}
+.form-grid::before{content:'';position:absolute;top:-3px;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent 0%,rgba(0,64,133,0.08) 50%,transparent 100%)}
+.input-group{background:linear-gradient(135deg,rgba(248,252,255,0.9) 0%,rgba(255,255,255,0.85) 100%);padding:4px;border-radius:4px;border:1px solid rgba(0,64,133,0.06);box-shadow:0 1px 4px rgba(0,0,0,0.02),inset 0 1px 0 rgba(255,255,255,0.7);transition:all 0.3s ease;position:relative;overflow:hidden}
+.input-group::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,var(--info) 0%,var(--success) 100%);opacity:0;transition:opacity 0.3s ease}
+.input-group:hover{border-color:rgba(0,64,133,0.12);box-shadow:0 4px 15px rgba(0,64,133,0.04),inset 0 1px 0 rgba(255,255,255,0.8);transform:translateY(-1px)}
+.input-group:hover::before{opacity:0.7}
+.faculty-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-top:20px}
+@media(max-width:1200px){.faculty-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:768px){.faculty-grid{grid-template-columns:1fr}}
+.subject-card{background:white;border-radius:8px;padding:15px;box-shadow:0 2px 8px rgba(0,64,133,0.1);border-left:3px solid var(--info);transition:all 0.3s;height:fit-content}
+.subject-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,64,133,0.15)}
+.subject-card h3{font-size:15px;color:var(--primary);margin:0 0 12px 0;padding-bottom:10px;border-bottom:2px solid #e9ecef;font-weight:700}
+.section-row{display:grid;grid-template-columns:80px 1fr;gap:8px;align-items:center;padding:8px;background:#f8f9fa;border-radius:4px;margin-bottom:8px;transition:all 0.2s}
+.section-row:hover{background:#e9ecef}
+.section-row label{margin:0;padding:0;text-transform:none;font-size:12px;font-weight:600;color:var(--primary)}
+.section-row select{font-size:12px;padding:6px;border-radius:4px}
+.cross-dept-check{display:flex;align-items:center;gap:5px;font-size:11px;color:#666;margin-top:5px}
+.cross-dept-check input{width:auto;margin:0}
+.subjects-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:15px;margin-top:20px}
+.subject-item{padding:15px;background:white;border-radius:8px;border-left:4px solid var(--info);box-shadow:0 2px 8px rgba(0,64,133,0.08);transition:all 0.3s}
+.subject-item:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,64,133,0.15)}
+.subject-item strong{color:var(--primary);font-size:16px;display:block;margin-bottom:8px}
+.subject-item span{color:#666;font-size:13px;display:block;line-height:1.6}
+.subject-item .badge{display:inline-block;padding:3px 8px;background:var(--info);color:white;border-radius:12px;font-size:11px;margin-right:5px;margin-top:5px}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="header">
+<div class="logo-left"><img src="left-logo.png" alt="MET Logo"></div>
+<div class="header-text">
+<h1 class="green">🎓 Maharaja Education Trust (R), Mysuru</h1>
+<h1 class="orange">🏛️ Maharaja Institute of Technology, Mysore</h1>
+<h1 class="green">An Autonomous Institution Affiliated to VTU, Belagavi</h1>
+<h1 class="orange">✅ Approved by AICTE, New Delhi | Recognized by Government of Karnataka</h1>
+</div>
+<div class="logo-right"><img src="right-logo.png" alt="Circle Logo"></div>
+</div>
+
+<div class="container">
+<div class="main-grid">
+<div class="top-row">
+<div class="card">
+<h2>⚙️ Quick Setup</h2>
+<div class="form-grid">
+<div class="input-group">
+<label data-icon="📅">Working Days</label>
+<select id="workingDays">
+<option value="5">Monday to Friday (5 Days)</option>
+<option value="6">Monday to Saturday (6 Days)</option>
+<option value="5alt">Tuesday to Saturday (5 Days)</option>
+</select>
+</div>
+<div class="input-group">
+<label data-icon="🎓">Academic Year</label>
+<input id="academicYear" type="text" placeholder="e.g. 2024-25" value="2024-25"/>
+</div>
+</div>
+<div class="form-grid">
+<div class="input-group">
+<label data-icon="📚">Year</label>
+<select id="yearSelect">
+<option value="">--Select--</option>
+<option value="1">1</option>
+<option value="2">2</option>
+<option value="3">3</option>
+<option value="4">4</option>
+</select>
+</div>
+<div class="input-group">
+<label data-icon="📖">Semester</label>
+<select id="semesterSelect">
+<option value="">--Select--</option>
+</select>
+</div>
+</div>
+<div class="input-group">
+<label data-icon="🔢">Sections</label>
+<input id="numSections" type="number" min="1" max="10" value="1"/>
+</div>
+</div>
+
+<div class="card">
+<h2>📋 Schedule Config</h2>
+<div class="form-grid">
+<div class="input-group">
+<label data-icon="⏰">Periods/Day</label>
+<input id="periodsPerDay" type="number" min="4" max="10" value="7"/>
+</div>
+<div class="input-group">
+<label data-icon="🍽️">After Lunch</label>
+<input id="afterLunchPeriods" type="number" min="1" max="5" value="3"/>
+</div>
+</div>
+<div class="form-grid">
+<div class="input-group">
+<label data-icon="🌅">Start Time</label>
+<input id="startTime" type="time" value="09:00"/>
+</div>
+<div class="input-group">
+<label data-icon="🌆">End Time</label>
+<input id="endTime" type="time" value="17:00"/>
+</div>
+</div>
+<div class="form-grid">
+<div class="input-group">
+<label data-icon="☕">Break Start</label>
+<input id="shortBreakStart" type="time" value="11:00"/>
+</div>
+<div class="input-group">
+<label data-icon="⏰">Break End</label>
+<input id="shortBreakEnd" type="time" value="11:15"/>
+</div>
+</div>
+<div class="form-grid">
+<div class="input-group">
+<label data-icon="🍽️">Lunch Start</label>
+<input id="lunchBreakStart" type="time" value="13:00"/>
+</div>
+<div class="input-group">
+<label data-icon="🍴">Lunch End</label>
+<input id="lunchBreakEnd" type="time" value="14:00"/>
+</div>
+</div>
+</div>
+
+<div class="card" id="timingPreviewCard">
+<h2>⏰ Timing Preview</h2>
+<div id="timingPreview" style="font-size:9px;line-height:1.2;color:var(--primary);height:auto;border:1px solid rgba(0,64,133,0.1);border-radius:3px;padding:3px;background:rgba(248,252,255,0.6)"></div>
+</div>
+</div>
+
+<button class="btn" onclick="loadSubjects()" style="max-width:300px;margin:0 auto">➡️ Next</button>
+
+<div class="content-area">
+<div id="subjectsDisplay" class="hidden">
+<h2 style="color:var(--primary);margin-bottom:20px">📚 Loaded Subjects</h2>
+<div id="subjectsList"></div>
+<button class="btn" onclick="showFacultyAssignment()" style="max-width:300px">➡️ Next: Assign Faculty</button>
+</div>
+
+<div id="facultyAssignment" class="hidden">
+<h2 style="color:var(--primary);margin-bottom:20px">👨🏫 Faculty Assignment</h2>
+<div id="subjectCards"></div>
+<button class="btn btn-success" onclick="openGenerator()" style="margin-top:20px;max-width:300px">🚀 Generate Timetable</button>
+</div>
+</div>
+</div>
+</div>
+
+<script>
+const SUPABASE_URL='https://bkmzyhroignpjebfpqug.supabase.co';
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrbXp5aHJvaWducGplYmZwcXVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0MjA1NDUsImV4cCI6MjA3Mjk5NjU0NX0.ICE2eYzFZvz0dtNpAa5YlJTZD-idc2J76wn1ZeHwwck';
+const supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+const urlParams=new URLSearchParams(window.location.search);
+const currentDepartment=urlParams.get('dept')||localStorage.getItem('currentDepartment')||'ISE';
+let loadedSubjects=[];
+let facultyList=[];
+
+async function loadAvailableData(){
+try{
+const{data,error}=await supabase.from('subjects').select('academic_year,year,semester').eq('department',currentDepartment);
+if(error)throw error;
+if(!data||data.length===0)return;
+const uniqueYears=new Set();
+data.forEach(d=>uniqueYears.add(d.academic_year));
+const aySelect=document.getElementById('academicYear');
+if(uniqueYears.size>0)aySelect.value=Array.from(uniqueYears)[0];
+}catch(err){console.error(err)}
+}
+
+document.getElementById('yearSelect').onchange=function(){
+const year=this.value;
+const semSelect=document.getElementById('semesterSelect');
+semSelect.innerHTML='<option value="">--Select--</option>';
+if(year){
+const sems={'1':['1','2'],'2':['3','4'],'3':['5','6'],'4':['7','8']}[year];
+sems.forEach(s=>{
+const opt=document.createElement('option');
+opt.value=s;
+opt.textContent='Semester '+s;
+semSelect.appendChild(opt);
+});
+}
+};
+
+loadAvailableData();
+
+async function loadSubjects(){
+const ay=document.getElementById('academicYear').value.trim();
+const year=document.getElementById('yearSelect').value;
+const sem=document.getElementById('semesterSelect').value;
+if(!ay||!year||!sem){alert('Please fill all fields');return}
+try{
+const{data,error}=await supabase.from('subjects').select('*').eq('department',currentDepartment).eq('academic_year',ay).eq('year',parseInt(year)).eq('semester',parseInt(sem));
+if(error)throw error;
+if(!data||data.length===0){alert('No subjects found');return}
+loadedSubjects=data;
+await loadFaculty();
+displaySubjects();
+}catch(err){alert('Error: '+err.message)}
+}
+
+async function loadFaculty(){
+try{
+const{data,error}=await supabase.from('faculty').select('*').eq('department',currentDepartment);
+if(error)throw error;
+facultyList=data||[];
+}catch(err){console.error(err)}
+}
+
+function displaySubjects(){
+const container=document.getElementById('subjectsList');
+container.innerHTML='<div class="subjects-grid">'+loadedSubjects.map(s=>`
+<div class="subject-item">
+<strong>📚 ${s.name}</strong>
+<span><span class="badge">${s.credits} Credits</span><span class="badge">${s.type}</span><span class="badge">${s.weekly_hours}h/week</span></span>
+</div>
+`).join('')+'</div>';
+document.getElementById('subjectsDisplay').classList.remove('hidden');
+document.getElementById('facultyAssignment').classList.add('hidden');
+}
+
+function showFacultyAssignment(){
+const numSections=parseInt(document.getElementById('numSections').value)||1;
+const container=document.getElementById('subjectCards');
+let html='<div class="faculty-grid">';
+loadedSubjects.forEach((subject,idx)=>{
+let sectionsHTML='';
+for(let i=1;i<=numSections;i++){
+sectionsHTML+=`
+<div class="section-row">
+<label>Sec ${i}</label>
+<select id="faculty_s${i}_sub${idx}" data-subject="${subject.name}">
+<option value="">--Select--</option>
+${facultyList.map(f=>`<option value="${f.id}" data-dept="${f.department}">${f.initials}</option>`).join('')}
+</select>
+</div>
+`;
+}
+html+=`
+<div class="subject-card">
+<h3>📚 ${subject.name}</h3>
+<div class="cross-dept-check">
+<input type="checkbox" id="cross_${idx}">
+<label for="cross_${idx}" style="padding:0;text-transform:none;font-size:11px">Cross Dept</label>
+</div>
+${sectionsHTML}
+</div>
+`;
+});
+html+='</div>';
+container.innerHTML=html;
+document.getElementById('subjectsDisplay').classList.add('hidden');
+document.getElementById('facultyAssignment').classList.remove('hidden');
+}
+
+async function openGenerator(){
+const ay=document.getElementById('academicYear').value.trim();
+const year=document.getElementById('yearSelect').value;
+const sem=document.getElementById('semesterSelect').value;
+const numSections=parseInt(document.getElementById('numSections').value)||1;
+
+if(!ay||!year||!sem){alert('Please complete all fields');return}
+
+const config={
+academicYear:ay,
+year:year,
+semester:sem,
+department:currentDepartment,
+subjects:loadedSubjects,
+sections:[],
+workingDays:document.getElementById('workingDays').value,
+periodsPerDay:document.getElementById('periodsPerDay').value,
+afterLunchPeriods:document.getElementById('afterLunchPeriods').value,
+startTime:document.getElementById('startTime').value,
+endTime:document.getElementById('endTime').value,
+shortBreakStart:document.getElementById('shortBreakStart').value,
+shortBreakEnd:document.getElementById('shortBreakEnd').value,
+lunchBreakStart:document.getElementById('lunchBreakStart').value,
+lunchBreakEnd:document.getElementById('lunchBreakEnd').value
+};
+
+for(let i=1;i<=numSections;i++){
+const sectionData={name:'Section '+i,subjectFaculty:[]};
+loadedSubjects.forEach((subject,idx)=>{
+const facultyId=document.getElementById(`faculty_s${i}_sub${idx}`).value;
+const faculty=facultyList.find(f=>f.id==facultyId);
+if(!faculty){alert(`Please assign faculty for ${subject.name} in Section ${i}`);return}
+sectionData.subjectFaculty.push({
+subject:subject.name,
+subjectId:subject.id,
+faculty:faculty.name,
+facultyId:faculty.id,
+facultyInitials:faculty.initials,
+credits:subject.credits,
+type:subject.type,
+weekly_hours:subject.weekly_hours
+});
+});
+config.sections.push(sectionData);
+}
+
+try{
+const sessionId='tt_'+Date.now();
+const{error}=await supabase.from('timetable_sessions').insert([{
+session_id:sessionId,
+department:currentDepartment,
+academic_year:ay,
+year:parseInt(year),
+semester:parseInt(sem),
+config_data:config,
+created_at:new Date().toISOString()
+}]);
+if(error)throw error;
+window.location.href=`enhanced.htm?session=${sessionId}`;
+}catch(err){
+alert('Error saving config: '+err.message);
+}
+}
+
+const quickSetupConfig={workingDays:document.getElementById('workingDays'),academicYear:document.getElementById('academicYear'),periodsPerDay:document.getElementById('periodsPerDay'),afterLunchPeriods:document.getElementById('afterLunchPeriods')};
+const scheduleConfig={startTime:document.getElementById('startTime'),endTime:document.getElementById('endTime'),shortBreakStart:document.getElementById('shortBreakStart'),shortBreakEnd:document.getElementById('shortBreakEnd'),lunchBreakStart:document.getElementById('lunchBreakStart'),lunchBreakEnd:document.getElementById('lunchBreakEnd')};
+
+function previewTimings(){
+const periodsPerDay=parseInt(document.getElementById('periodsPerDay').value)||7;
+const startTime=document.getElementById('startTime').value||'09:00';
+const shortBreakStart=document.getElementById('shortBreakStart').value||'11:00';
+const shortBreakEnd=document.getElementById('shortBreakEnd').value||'11:15';
+const lunchBreakStart=document.getElementById('lunchBreakStart').value||'13:00';
+const lunchBreakEnd=document.getElementById('lunchBreakEnd').value||'14:00';
+const periodDuration=60;
+const previewDiv=document.getElementById('timingPreview');
+function formatIndianTime(date){return date.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true})}
+const beforeShortBreak=2;
+const afterShortBreak=2;
+const afterLunch=periodsPerDay-beforeShortBreak-afterShortBreak;
+let currentTime=new Date(`2024-01-01 ${startTime}:00`);
+let preview='<div style="font-weight:bold;margin-bottom:6px;color:var(--primary);font-size:12px;text-align:center;padding:4px;background:rgba(0,64,133,0.06);border-radius:3px;">📅 Schedule</div>';
+for(let i=1;i<=beforeShortBreak;i++){
+const endTime=new Date(currentTime.getTime()+periodDuration*60000);
+preview+=`<div style="padding:3px 6px;border-left:2px solid var(--info);background:rgba(23,162,184,0.03);margin:2px 0;border-radius:0 3px 3px 0;font-size:10px;font-weight:500;">P${i}: ${formatIndianTime(currentTime)} - ${formatIndianTime(endTime)}</div>`;
+currentTime=endTime;
+}
+const shortStart=new Date(`2024-01-01 ${shortBreakStart}:00`);
+const shortEnd=new Date(`2024-01-01 ${shortBreakEnd}:00`);
+preview+=`<div style="padding:3px 6px;background:rgba(255,193,7,0.08);border-left:2px solid var(--warning);margin:2px 0;border-radius:0 3px 3px 0;font-size:10px;font-weight:500;">☕ ${formatIndianTime(shortStart)}-${formatIndianTime(shortEnd)}</div>`;
+currentTime=new Date(`2024-01-01 ${shortBreakEnd}:00`);
+for(let i=beforeShortBreak+1;i<=beforeShortBreak+afterShortBreak;i++){
+const endTime=new Date(currentTime.getTime()+periodDuration*60000);
+preview+=`<div style="padding:3px 6px;border-left:2px solid var(--info);background:rgba(23,162,184,0.03);margin:2px 0;border-radius:0 3px 3px 0;font-size:10px;font-weight:500;">P${i}: ${formatIndianTime(currentTime)} - ${formatIndianTime(endTime)}</div>`;
+currentTime=endTime;
+}
+const lunchStart=new Date(`2024-01-01 ${lunchBreakStart}:00`);
+const lunchEnd=new Date(`2024-01-01 ${lunchBreakEnd}:00`);
+preview+=`<div style="padding:4px 6px;background:rgba(40,167,69,0.08);border-left:2px solid var(--success);margin:3px 0;border-radius:0 3px 3px 0;font-weight:bold;font-size:11px;text-align:center;">🍽️ ${formatIndianTime(lunchStart)}-${formatIndianTime(lunchEnd)}</div>`;
+currentTime=new Date(`2024-01-01 ${lunchBreakEnd}:00`);
+for(let i=beforeShortBreak+afterShortBreak+1;i<=periodsPerDay;i++){
+const endTime=new Date(currentTime.getTime()+periodDuration*60000);
+preview+=`<div style="padding:3px 6px;border-left:2px solid var(--info);background:rgba(23,162,184,0.03);margin:2px 0;border-radius:0 3px 3px 0;font-size:10px;font-weight:500;">P${i}: ${formatIndianTime(currentTime)} - ${formatIndianTime(endTime)}</div>`;
+currentTime=endTime;
+}
+previewDiv.innerHTML=preview;
+}
+
+Object.values(quickSetupConfig).forEach(element=>{element.addEventListener('change',previewTimings);element.addEventListener('input',previewTimings)});
+Object.values(scheduleConfig).forEach(element=>{element.addEventListener('change',previewTimings);element.addEventListener('input',previewTimings)});
+previewTimings();
+loadAvailableData();
+</script>
+</body>
+</html>

@@ -1,0 +1,2256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Timetable - MIT Mysore</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: white;
+            padding: 20px 20px 20px 0;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 0 40px 0;
+            background: white;
+            border: 2px solid #000;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 4px solid #002244;
+            background: linear-gradient(135deg, #004085 0%, #003366 50%, #004085 100%);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 6px 25px rgba(0, 64, 133, 0.4);
+        }
+        
+        .logo-left, .logo-right {
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            text-align: center;
+        }
+        
+        .logo-left img, .logo-right img {
+            width: 90px;
+            height: 90px;
+            object-fit: cover;
+        }
+        
+        .header-text {
+            flex: 1;
+            text-align: center;
+            padding: 0 20px;
+        }
+        
+        .header-text h1 {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: white;
+        }
+        
+        .header-text p {
+            font-size: 13px;
+            margin: 3px 0;
+            color: white;
+        }
+        
+        .class-info {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #000;
+            font-size: 15px;
+            font-weight: bold;
+        }
+        
+        .timetable {
+            width: 100%;
+            border-spacing: 2px;
+        }
+        
+        .timetable th, .timetable td {
+            border: 1px solid #000;
+            padding: 12px 8px;
+            text-align: center;
+            font-size: 13px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .timetable th {
+            background: #e9ecef;
+            color: #333;
+            font-weight: bold;
+        }
+        
+        .day-header {
+            background: #f8f9fa;
+            font-weight: bold;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            font-size: 14px;
+        }
+        
+        .time-header {
+            background: #e6e6e6;
+            font-size: 10px;
+            line-height: 1.2;
+        }
+        
+        .subject-cell {
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .subject-cell:hover {
+            background: #f8f9fa;
+        }
+        
+        .break-cell {
+            background: #fff3cd;
+            font-weight: bold;
+            font-size: 11px;
+            text-align: center;
+        }
+        
+        .lunch-break {
+            background: #f8d7da;
+            font-weight: bold;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(5px);
+            animation: modalFadeIn 0.3s ease;
+        }
+        
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal-content {
+            background: white;
+            margin: 15% auto;
+            padding: 20px;
+            border: 2px solid #000;
+            width: 400px;
+            border-radius: 5px;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .close {
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: rgba(255,255,255,0.9);
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+            background: white;
+            transform: translateY(-2px);
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255,255,255,0.3);
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            transform: translate(-50%, -50%);
+        }
+        
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-primary { background: #007bff; color: white; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        
+        .back-button {
+            position: fixed;
+            top: 10px;
+            left: 20px;
+            background: #28a745;
+            color: white;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            z-index: 200;
+        }
+        
+        .action-buttons {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 200;
+        }
+        
+        .action-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 15px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            width: 180px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .action-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+        
+        .action-btn:hover::before {
+            left: 100%;
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+        
+        .faculty-analyzer-btn {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        }
+        
+        .save-button {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+        
+        .slot-swap-btn {
+            background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%);
+        }
+        
+        .conflict-resolver-btn {
+            background: linear-gradient(135deg, #fd7e14 0%, #dc3545 100%);
+        }
+        
+        .whatsapp-share-btn {
+            background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+        }
+        
+        .conflict-alert {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #fff;
+            border: none;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.4);
+            z-index: 1001;
+            max-width: 700px;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: modalSlideIn 0.3s ease;
+        }
+        
+        .enhanced-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+            backdrop-filter: blur(8px);
+        }
+        
+        .enhanced-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.4);
+            min-width: 500px;
+            max-width: 600px;
+            animation: modalSlideIn 0.3s ease;
+        }
+        
+        .enhanced-title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .enhanced-option {
+            display: flex;
+            align-items: center;
+            padding: 20px 25px;
+            margin: 15px 0;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f9f9f9;
+        }
+        
+        .enhanced-option:hover {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #f0f4ff, #f8f0ff);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .enhanced-icon {
+            font-size: 32px;
+            margin-right: 20px;
+            width: 50px;
+            text-align: center;
+        }
+        
+        .enhanced-text {
+            flex: 1;
+        }
+        
+        .enhanced-text h3 {
+            margin: 0 0 8px 0;
+            font-size: 18px;
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .enhanced-text p {
+            margin: 0;
+            font-size: 14px;
+            color: #666;
+            line-height: 1.4;
+        }
+        
+        .close-enhanced {
+            position: absolute;
+            top: 15px;
+            right: 25px;
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #999;
+            transition: color 0.3s ease;
+        }
+        
+        .close-enhanced:hover {
+            color: #333;
+        }
+        
+        .conflict-item {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 5px;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .conflict-header {
+            color: #721c24;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .conflict-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            display: none;
+        }
+        
+        .swap-mode {
+            border: 3px solid #ff6b6b !important;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 107, 107, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0); }
+        }
+        
+        .swap-suggestion {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .swap-suggestion:hover {
+            background: #ffeaa7;
+            transform: translateY(-2px);
+        }
+        
+        .faculty-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(5px);
+        }
+        
+        .faculty-modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 20px;
+            border: 2px solid #000;
+            width: 80%;
+            max-width: 800px;
+            border-radius: 10px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .faculty-search {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .faculty-search input {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .faculty-results {
+            margin-top: 20px;
+        }
+        
+        .faculty-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: #f8f9fa;
+        }
+        
+        .faculty-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+        
+        .schedule-item {
+            background: white;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .ai-insights {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .ai-insights h4 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+        
+        .section-navigator {
+            position: fixed;
+            top: 10px;
+            right: 150px;
+            background: white;
+            border: 2px solid #000;
+            border-radius: 10px;
+            padding: 10px 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .nav-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-btn:hover {
+            background: #0056b3;
+            transform: scale(1.1);
+        }
+        
+        .nav-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .section-info {
+            font-weight: bold;
+            font-size: 12px;
+            color: #333;
+            min-width: 60px;
+            text-align: center;
+        }
+        
+        .timetable-section {
+            display: none;
+        }
+        
+        .timetable-section.active {
+            display: block;
+        }
+        
+        .bottom-nav {
+            position: relative;
+            margin: 40px auto 20px;
+            max-width: 600px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        
+        .bottom-nav .btn {
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            width: auto;
+            min-width: 130px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            border-radius: 25px;
+        }
+        
+        .bottom-nav .btn:hover {
+            background: rgba(255,255,255,0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        }
+        
+        .export-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+            backdrop-filter: blur(8px);
+        }
+        
+        .export-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.4);
+            min-width: 450px;
+            max-width: 550px;
+            animation: modalSlideIn 0.3s ease;
+        }
+        
+        @keyframes modalSlideIn {
+            from { transform: translate(-50%, -60%); opacity: 0; }
+            to { transform: translate(-50%, -50%); opacity: 1; }
+        }
+        
+        .export-title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .export-option {
+            display: flex;
+            align-items: center;
+            padding: 20px 25px;
+            margin: 15px 0;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f9f9f9;
+        }
+        
+        .export-option:hover {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #f0f4ff, #f8f0ff);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .export-icon {
+            font-size: 32px;
+            margin-right: 20px;
+            width: 50px;
+            text-align: center;
+        }
+        
+        .export-text {
+            flex: 1;
+        }
+        
+        .export-text h3 {
+            margin: 0 0 8px 0;
+            font-size: 18px;
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .export-text p {
+            margin: 0;
+            font-size: 14px;
+            color: #666;
+            line-height: 1.4;
+        }
+        
+        .close-export {
+            position: absolute;
+            top: 15px;
+            right: 25px;
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #999;
+            transition: color 0.3s ease;
+        }
+        
+        .close-export:hover {
+            color: #333;
+        }
+        
+        @media print {
+            .back-button, .faculty-analyzer-btn, .save-button, .slot-swap-btn, .section-navigator {
+                display: none !important;
+            }
+            .timetable-section:not(.active) {
+                display: none !important;
+            }
+            body {
+                padding-top: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="timetable-new.htm" class="back-button">← Back</a>
+    <div class="action-buttons">
+        <button class="action-btn faculty-analyzer-btn" onclick="openFacultyAnalyzer()">🔍 Faculty Analyzer</button>
+        <button class="action-btn save-button" onclick="openSaveModal()">💾 Save Timetable</button>
+        <button class="action-btn slot-swap-btn" onclick="openSwapModal()">🔄 Slot Swap</button>
+        <button class="action-btn conflict-resolver-btn" onclick="openConflictResolver()">⚡ Conflict Resolver</button>
+        <button class="action-btn whatsapp-share-btn" onclick="openShareModal()">📱 Share Options</button>
+    </div>
+    
+    <div class="section-navigator" id="sectionNavigator">
+        <button class="nav-btn" id="prevBtn" onclick="previousSection()">‹</button>
+        <div class="section-info" id="sectionInfo">Section 1/1</div>
+        <button class="nav-btn" id="nextBtn" onclick="nextSection()">›</button>
+    </div>
+    
+    <div id="timetablesContainer"></div>
+    
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <button class="btn btn-primary" onclick="nextStep()">Next Step ➡️</button>
+        <button class="btn btn-secondary" onclick="exportOptions()">Export Options</button>
+        <button class="btn" onclick="viewSummary()">View Summary</button>
+    </div>
+    
+    <!-- Export Options Modal -->
+    <div id="exportModal" class="export-modal">
+        <div class="export-content">
+            <button class="close-export" onclick="closeExportModal()">&times;</button>
+            <div class="export-title">📤 Export Options</div>
+            
+            <div class="export-option" onclick="exportPDF()">
+                <div class="export-icon">📄</div>
+                <div class="export-text">
+                    <h3>PDF Export</h3>
+                    <p>Generate high-quality PDF with all sections. Perfect for printing and sharing.</p>
+                </div>
+            </div>
+            
+            <div class="export-option" onclick="exportExcel()">
+                <div class="export-icon">📊</div>
+                <div class="export-text">
+                    <h3>Excel Export</h3>
+                    <p>Export to Excel format for further editing and data analysis. (Coming Soon)</p>
+                </div>
+            </div>
+            
+            <div class="export-option" onclick="exportImage()">
+                <div class="export-icon">🖼️</div>
+                <div class="export-text">
+                    <h3>Image Export</h3>
+                    <p>Save as PNG/JPG images for easy sharing on social media. (Coming Soon)</p>
+                </div>
+            </div>
+            
+            <div class="export-option" onclick="printTimetable()">
+                <div class="export-icon">🖨️</div>
+                <div class="export-text">
+                    <h3>Print Version</h3>
+                    <p>Optimized print layout with clean formatting for physical copies.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Save Options Modal -->
+    <div id="saveModal" class="enhanced-modal">
+        <div class="enhanced-content">
+            <button class="close-enhanced" onclick="closeSaveModal()">&times;</button>
+            <div class="enhanced-title">💾 Save Options</div>
+            
+            <div class="enhanced-option" onclick="saveTimetable()">
+                <div class="enhanced-icon">📄</div>
+                <div class="enhanced-text">
+                    <h3>Save as PDF</h3>
+                    <p>Generate high-quality PDF with all sections and store in vault.</p>
+                </div>
+            </div>
+            
+            <div class="enhanced-option" onclick="saveToCloud()">
+                <div class="enhanced-icon">☁️</div>
+                <div class="enhanced-text">
+                    <h3>Save to Cloud</h3>
+                    <p>Backup your timetable to cloud storage for access anywhere. (Coming Soon)</p>
+                </div>
+            </div>
+            
+            <div class="enhanced-option" onclick="saveTemplate()">
+                <div class="enhanced-icon">📋</div>
+                <div class="enhanced-text">
+                    <h3>Save as Template</h3>
+                    <p>Create a reusable template for future timetable generation.</p>
+                </div>
+            </div>
+            
+            <div class="enhanced-option" onclick="nextStepFromSave()">
+                <div class="enhanced-icon">➡️</div>
+                <div class="enhanced-text">
+                    <h3>Next Section</h3>
+                    <p>Move to the next section to continue timetable setup.</p>
+                </div>
+            </div>
+            
+            <div class="enhanced-option" onclick="exportOptionsFromSave()">
+                <div class="enhanced-icon">📤</div>
+                <div class="enhanced-text">
+                    <h3>Export Options</h3>
+                    <p>Access PDF, Excel, Image and Print export options.</p>
+                </div>
+            </div>
+            
+            <div class="enhanced-option" onclick="viewSummaryFromSave()">
+                <div class="enhanced-icon">📈</div>
+                <div class="enhanced-text">
+                    <h3>View Summary</h3>
+                    <p>See complete timetable summary and conflict status.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Swap Options Modal -->
+    <div id="swapModal" class="enhanced-modal">
+        <div class="enhanced-content">
+            <button class="close-enhanced" onclick="closeSwapModal()">&times;</button>
+            <div class="enhanced-title">🔄 Swap Options</div>
+            
+            <div class="enhanced-option" onclick="toggleSwapMode()">
+                <div class="enhanced-icon">🎯</div>
+                <div class="enhanced-text">
+                    <h3>Manual Swap</h3>
+                    <p>Click two cells to swap their content manually.</p>
+                </div>
+            </div>
+            
+            <div class="enhanced-option" onclick="autoSwapSuggestions()">
+                <div class="enhanced-icon">🤖</div>
+                <div class="enhanced-text">
+                    <h3>AI Swap Suggestions</h3>
+                    <p>Get intelligent suggestions for optimal slot arrangements.</p>
+                </div>
+            </div>
+            
+            <div class="enhanced-option" onclick="bulkSwap()">
+                <div class="enhanced-icon">📊</div>
+                <div class="enhanced-text">
+                    <h3>Bulk Operations</h3>
+                    <p>Perform multiple swaps and rearrangements at once.</p>
+                </div>
+            </div>
+            
+            <div class="enhanced-option" onclick="nextStepFromSwap()">
+                <div class="enhanced-icon">➡️</div>
+                <div class="enhanced-text">
+                    <h3>Next Section</h3>
+                    <p>Move to the next section to continue timetable setup.</p>
+                </div>
+            </div>
+            
+            <div class="enhanced-option" onclick="exportOptionsFromSwap()">
+                <div class="enhanced-icon">📤</div>
+                <div class="enhanced-text">
+                    <h3>Export Options</h3>
+                    <p>Access PDF, Excel, Image and Print export options.</p>
+                </div>
+            </div>
+            
+            <div class="enhanced-option" onclick="viewSummaryFromSwap()">
+                <div class="enhanced-icon">📈</div>
+                <div class="enhanced-text">
+                    <h3>View Summary</h3>
+                    <p>See complete timetable summary and conflict status.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Share Options Modal -->
+    <div id="shareModal" class="enhanced-modal">
+        <div class="enhanced-content">
+            <button class="close-enhanced" onclick="closeShareModal()">&times;</button>
+            <div class="enhanced-title">📱 Share Options</div>
+            
+            <div class="enhanced-option" onclick="shareOnWhatsApp()">
+                <div class="enhanced-icon">📱</div>
+                <div class="enhanced-text">
+                    <h3>WhatsApp</h3>
+                    <p>Share timetable summary via WhatsApp with colleagues.</p>
+                </div>
+            </div>
+            
+            <div class="enhanced-option" onclick="shareViaEmail()">
+                <div class="enhanced-icon">📧</div>
+                <div class="enhanced-text">
+                    <h3>Email</h3>
+                    <p>Send timetable via email with PDF attachment.</p>
+                </div>
+            </div>
+            
+            <div class="enhanced-option" onclick="generateShareLink()">
+                <div class="enhanced-icon">🔗</div>
+                <div class="enhanced-text">
+                    <h3>Share Link</h3>
+                    <p>Generate a shareable link for online viewing.</p>
+                </div>
+            </div>
+            
+            <div class="enhanced-option" onclick="shareToSocial()">
+                <div class="enhanced-icon">🌐</div>
+                <div class="enhanced-text">
+                    <h3>Social Media</h3>
+                    <p>Share on Facebook, Twitter, LinkedIn and other platforms.</p>
+                </div>
+            </div>
+            
+            <div class="enhanced-option" onclick="exportOptionsFromShare()">
+                <div class="enhanced-icon">📤</div>
+                <div class="enhanced-text">
+                    <h3>Export Options</h3>
+                    <p>Access PDF, Excel, Image and Print export options.</p>
+                </div>
+            </div>
+            
+            <div class="enhanced-option" onclick="viewSummaryFromShare()">
+                <div class="enhanced-icon">📈</div>
+                <div class="enhanced-text">
+                    <h3>View Summary</h3>
+                    <p>See complete timetable summary and conflict status.</p>
+                </div>
+            </div>
+            
+            <div class="enhanced-option" onclick="nextStepFromShare()">
+                <div class="enhanced-icon">➡️</div>
+                <div class="enhanced-text">
+                    <h3>Next Section</h3>
+                    <p>Move to the next section to continue timetable setup.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Conflict Alert Overlay -->
+    <div id="conflictOverlay" class="conflict-overlay"></div>
+    <div id="conflictAlert" class="conflict-alert" style="display: none;">
+        <div class="conflict-header">
+            <h3>⚠️ Timetable Conflicts Detected</h3>
+        </div>
+        <div id="conflictList"></div>
+        <div style="text-align: center; margin-top: 20px;">
+            <button class="btn btn-primary" onclick="closeConflictAlert()">Close</button>
+            <button class="btn btn-secondary" onclick="autoResolveConflicts()">Auto Resolve</button>
+        </div>
+    </div>
+        
+
+    
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Subject</h3>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="form-group">
+                <label for="subjectName">Subject Name:</label>
+                <input type="text" id="subjectName" placeholder="Enter subject name">
+            </div>
+            <div class="form-group">
+                <label for="teacherName">Teacher Name:</label>
+                <input type="text" id="teacherName" placeholder="Enter teacher name">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-primary" onclick="saveSubject()">Save</button>
+                <button class="btn btn-danger" onclick="clearSubject()">Clear</button>
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Faculty Analyzer Modal -->
+    <div id="facultyModal" class="faculty-modal">
+        <div class="faculty-modal-content">
+            <div class="modal-header">
+                <h3>🔍 Faculty Analyzer</h3>
+                <span class="close" onclick="closeFacultyModal()">&times;</span>
+            </div>
+            <div class="faculty-search">
+                <input type="text" id="facultySearch" placeholder="Enter faculty name...">
+                <button class="btn btn-primary" onclick="analyzeFaculty()">Analyze</button>
+                <button class="btn btn-secondary" onclick="generateSwapSuggestions()">AI Swap Suggestions</button>
+            </div>
+            <div id="facultyResults" class="faculty-results"></div>
+            <div id="swapSuggestions"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentCell = null;
+        let timetableData = null;
+        let currentSectionIndex = 0;
+        let totalSections = 0;
+        let swapMode = false;
+        let firstSwapCell = null;
+        let lastAnalysisData = null;
+
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const storedData = localStorage.getItem('timetableData');
+            if (storedData) {
+                timetableData = JSON.parse(storedData);
+                generateMultipleTimetables();
+            } else {
+                // Fallback to single timetable
+                generateSingleTimetable();
+            }
+        });
+
+        function generateMultipleTimetables() {
+            const container = document.getElementById('timetablesContainer');
+            const sections = timetableData.sections || ['5A'];
+            const subjects = timetableData.subjects || [];
+            const days = timetableData.days || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+            const timeSlots = timetableData.timeSlots || [];
+            
+            container.innerHTML = '';
+            totalSections = sections.length;
+            currentSectionIndex = 0;
+            
+            sections.forEach((section, index) => {
+                const timetableHtml = createTimetableHTML(section, subjects, days, timeSlots, index);
+                const sectionDiv = document.createElement('div');
+                sectionDiv.className = `timetable-section ${index === 0 ? 'active' : ''}`;
+                sectionDiv.id = `section-${index}`;
+                sectionDiv.innerHTML = timetableHtml;
+                container.appendChild(sectionDiv);
+            });
+            
+            updateSectionInfo();
+            
+            // Auto-detect conflicts after generation
+            setTimeout(() => {
+                const conflicts = detectAllConflicts();
+                if (conflicts.length > 0) {
+                    showConflictAlert(conflicts);
+                }
+            }, 1000);
+        }
+
+        function generateSingleTimetable() {
+            const container = document.getElementById('timetablesContainer');
+            const defaultSubjects = [
+                {name: 'TOC', teachers: 'Dr. Smith'},
+                {name: 'CNS', teachers: 'Prof. Johnson'},
+                {name: 'ST', teachers: 'Dr. Brown'},
+                {name: 'DMDW', teachers: 'Prof. Davis'},
+                {name: 'ML', teachers: 'Dr. Wilson'},
+                {name: 'AI', teachers: 'Prof. Taylor'}
+            ];
+            const defaultTimeSlots = [
+                {start: '09:00am', end: '10:00am', type: 'period'},
+                {start: '10:00am', end: '11:00am', type: 'period'},
+                {label: 'SHORT BREAK', type: 'break'},
+                {start: '11:15am', end: '12:15pm', type: 'period'},
+                {start: '12:15pm', end: '01:15pm', type: 'period'},
+                {label: 'LUNCH BREAK', type: 'break'},
+                {start: '02:00pm', end: '03:00pm', type: 'period'},
+                {start: '03:00pm', end: '04:00pm', type: 'period'}
+            ];
+            
+            document.getElementById('sectionNavigator').style.display = 'none';
+            
+            const sectionDiv = document.createElement('div');
+            sectionDiv.className = 'timetable-section active';
+            sectionDiv.innerHTML = createTimetableHTML('5A', defaultSubjects, ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], defaultTimeSlots, 0);
+            container.appendChild(sectionDiv);
+            
+            // Auto-detect conflicts for single timetable
+            setTimeout(() => {
+                const conflicts = detectAllConflicts();
+                if (conflicts.length > 0) {
+                    showConflictAlert(conflicts);
+                }
+            }, 1000);
+        }
+
+        function createTimetableHTML(section, subjects, days, timeSlots, index) {
+            const timeHeaders = timeSlots.filter(slot => slot.type === 'period' || slot.type === 'break')
+                .map(slot => {
+                    if (slot.type === 'break') {
+                        return `<th class="time-header">${slot.label}</th>`;
+                    } else {
+                        return `<th class="time-header">${slot.start}<br>to<br>${slot.end}</th>`;
+                    }
+                }).join('');
+
+            const dayRows = days.map(day => {
+                const cells = timeSlots.filter(slot => slot.type === 'period' || slot.type === 'break')
+                    .map(slot => {
+                        if (slot.type === 'break') {
+                            const breakClass = slot.label.includes('LUNCH') ? 'lunch-break' : 'break-cell';
+                            const breakText = slot.label.includes('LUNCH') ? 'LUNCH BREAK' : 'SHORT<br>BREAK';
+                            return `<td class="${breakClass}">${breakText}</td>`;
+                        } else {
+                            return `<td class="subject-cell" onclick="editSubject(this)"></td>`;
+                        }
+                    }).join('');
+                
+                return `<tr><td class="day-header">${day.toUpperCase()}</td>${cells}</tr>`;
+            }).join('');
+
+            const subjectRows = subjects.map(subject => {
+                const code = subject.name.substring(0, 4).toUpperCase();
+                const initials = subject.teachers ? subject.teachers.split(' ').map(n => n[0]).join('') : 'TBA';
+                return `
+                    <tr>
+                        <td onclick="editSubjectDetail(this, 0)">${code}</td>
+                        <td onclick="editSubjectDetail(this, 1)">${subject.name}</td>
+                        <td onclick="editSubjectDetail(this, 2)">${code}</td>
+                        <td onclick="editSubjectDetail(this, 3)">${subject.teachers || 'TBA'}</td>
+                        <td onclick="editSubjectDetail(this, 4)">${initials}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            return `
+                <div class="container">
+                    <div class="header">
+                        <div class="logo-left">
+                            <img src="left-logo.png" alt="MIT Logo">
+                        </div>
+                        <div class="header-text">
+                            <h1>🎓 MAHARAJA INSTITUTE OF TECHNOLOGY, MYSORE</h1>
+                            <p><strong> BELAWADI, SRIRANGAPATNA TALUK, MANDYA-571477</strong></p>
+                            <p><strong>💻 DEPARTMENT OF INFORMATION SCIENCE AND ENGINEERING</strong></p>
+                        </div>
+                        <div class="logo-right">
+                            <img src="right-logo.png" alt="ISE Logo">
+                        </div>
+                    </div>
+                    
+                    <div class="class-info">
+                        <span>📚 Class: <span onclick="editField(this, 'Class')">${section}</span></span>
+                        <span>🚪 Room Number: <span onclick="editField(this, 'Room')">_______</span></span>
+                        <span>📅 Academic Year: <span onclick="editField(this, 'Year')">2024-25</span></span>
+                    </div>
+                    
+                    <table class="timetable">
+                        <thead>
+                            <tr>
+                                <th rowspan="2">Day/Period</th>
+                                ${timeHeaders}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${dayRows}
+                        </tbody>
+                    </table>
+                    
+                    <table class="timetable" style="margin-top: 20px;">
+                        <thead>
+                            <tr>
+                                <th>SUB CODE</th>
+                                <th>SUBJECT TITLE</th>
+                                <th>SUB IN SHORT</th>
+                                <th>FACULTY</th>
+                                <th>FACULTY INITIALS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${subjectRows}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function editSubject(cell) {
+            if (swapMode) {
+                handleSwapClick(cell);
+                return;
+            }
+            
+            currentCell = cell;
+            const content = cell.innerHTML;
+            const parts = content.split('<br>');
+            const subject = parts[0] || '';
+            const teacher = parts[1] || '';
+            
+            document.getElementById('subjectName').value = subject;
+            document.getElementById('teacherName').value = teacher;
+            document.getElementById('editModal').style.display = 'block';
+        }
+
+        // AI-powered color assignment
+        const subjectColors = {
+            // Light, decent colors for subjects
+            colors: [
+                '#e3f2fd', '#f3e5f5', '#e8f5e8', '#fff3e0', '#fce4ec',
+                '#e0f2f1', '#f1f8e9', '#fff8e1', '#e8eaf6', '#f9fbe7',
+                '#e1f5fe', '#fdf2e9', '#f4e6ff', '#e6f7ff', '#fff2e8'
+            ],
+            used: new Map()
+        };
+        
+        function getAIColor(subject) {
+            if (subjectColors.used.has(subject)) {
+                return subjectColors.used.get(subject);
+            }
+            
+            // AI logic: assign color based on subject characteristics
+            let colorIndex = 0;
+            const subjectLower = subject.toLowerCase();
+            
+            // Math/Science subjects - cool colors
+            if (subjectLower.includes('math') || subjectLower.includes('physics') || subjectLower.includes('chemistry')) {
+                colorIndex = Math.abs(subject.charCodeAt(0) % 5);
+            }
+            // Computer subjects - tech colors
+            else if (subjectLower.includes('computer') || subjectLower.includes('programming') || subjectLower.includes('software')) {
+                colorIndex = 5 + Math.abs(subject.charCodeAt(0) % 3);
+            }
+            // Language subjects - warm colors
+            else if (subjectLower.includes('english') || subjectLower.includes('language') || subjectLower.includes('literature')) {
+                colorIndex = 8 + Math.abs(subject.charCodeAt(0) % 3);
+            }
+            // Other subjects - remaining colors
+            else {
+                colorIndex = 11 + Math.abs(subject.charCodeAt(0) % 4);
+            }
+            
+            const color = subjectColors.colors[colorIndex];
+            subjectColors.used.set(subject, color);
+            return color;
+        }
+        
+        function saveSubject() {
+            if (currentCell) {
+                const subject = document.getElementById('subjectName').value.trim();
+                const teacher = document.getElementById('teacherName').value.trim();
+                
+                if (subject || teacher) {
+                    currentCell.innerHTML = subject + (teacher ? '<br>' + teacher : '');
+                    
+                    // Apply AI-selected color
+                    if (subject) {
+                        const aiColor = getAIColor(subject);
+                        currentCell.style.backgroundColor = aiColor;
+                    }
+                } else {
+                    currentCell.innerHTML = '';
+                    currentCell.style.backgroundColor = 'white';
+                }
+            }
+            closeModal();
+        }
+        
+
+
+        function clearSubject() {
+            if (currentCell) {
+                currentCell.innerHTML = '';
+            }
+            closeModal();
+        }
+
+        function closeModal() {
+            document.getElementById('editModal').style.display = 'none';
+            currentCell = null;
+        }
+
+        function editField(element, fieldName) {
+            const newValue = prompt(`Enter ${fieldName}:`, element.textContent.trim());
+            if (newValue !== null) {
+                element.textContent = newValue || '_______';
+            }
+        }
+        
+        function generateSubjectCode(subjectName) {
+            return subjectName.match(/[A-Z0-9]/g)?.join('') || subjectName.substring(0, 4).toUpperCase();
+        }
+        
+        function generateFacultyInitials(facultyName) {
+            return facultyName.match(/[A-Z0-9]/g)?.join('') || facultyName.split(' ').map(word => word.charAt(0).toUpperCase()).join('');
+        }
+        
+        function editSubjectDetail(cell, type) {
+            const fieldNames = ['Subject Code', 'Subject Title', 'Subject Short', 'Faculty Name', 'Faculty Initials'];
+            const oldValue = cell.textContent.trim();
+            const newValue = prompt(`Enter ${fieldNames[type]}:`, oldValue);
+            if (newValue !== null && newValue !== oldValue) {
+                cell.textContent = newValue;
+                
+                // If editing subject title, auto-generate short code and update all sections
+                if (type === 1 && newValue.trim()) { // Subject Title column
+                    const subjectCode = generateSubjectCode(newValue);
+                    const row = cell.parentNode;
+                    const cells = row.querySelectorAll('td');
+                    
+                    // Update current row
+                    if (cells[0]) cells[0].textContent = subjectCode; // SUB CODE column
+                    if (cells[2]) cells[2].textContent = subjectCode; // SUB IN SHORT column
+                    
+                    // Update all sections with the new subject name
+                    updateAllSubjectTables(newValue, subjectCode, oldValue);
+                }
+                
+                // If editing faculty name, auto-generate initials in current section only
+                if (type === 3 && newValue.trim()) { // Faculty Name column
+                    const facultyInitials = generateFacultyInitials(newValue);
+                    const row = cell.parentNode;
+                    const cells = row.querySelectorAll('td');
+                    
+                    // Update current row initials
+                    if (cells[4]) cells[4].textContent = facultyInitials; // Faculty Initials column
+                }
+            }
+        }
+        
+        function updateAllSubjectTables(newSubjectName, subjectCode, oldSubjectName = '') {
+            const allSections = document.querySelectorAll('.timetable-section');
+            
+            allSections.forEach(section => {
+                // Update subject tables (bottom tables) in each section
+                const tables = section.querySelectorAll('.timetable');
+                tables.forEach(table => {
+                    const rows = table.querySelectorAll('tbody tr');
+                    rows.forEach(row => {
+                        const cells = row.querySelectorAll('td');
+                        if (cells.length >= 5) {
+                            const titleCell = cells[1]; // SUBJECT TITLE column
+                            if (titleCell && (titleCell.textContent.trim() === oldSubjectName || oldSubjectName === '')) {
+                                cells[0].textContent = subjectCode; // SUB CODE column
+                                cells[1].textContent = newSubjectName; // SUBJECT TITLE column
+                                cells[2].textContent = subjectCode; // SUB IN SHORT column
+                            }
+                        }
+                    });
+                });
+                
+                // Update all timetable cells (schedule grid) in each section
+                const subjectCells = section.querySelectorAll('.subject-cell');
+                subjectCells.forEach(cell => {
+                    const content = cell.innerHTML;
+                    if (oldSubjectName && content.includes(oldSubjectName)) {
+                        const parts = content.split('<br>');
+                        if (parts[0].trim() === oldSubjectName) {
+                            const teacher = parts[1] || '';
+                            cell.innerHTML = newSubjectName + (teacher ? '<br>' + teacher : '');
+                            
+                            // Apply same color
+                            const aiColor = getAIColor(newSubjectName);
+                            cell.style.backgroundColor = aiColor;
+                        }
+                    }
+                });
+            });
+        }
+        
+
+
+        async function saveTimetable() {
+            if (!window.html2canvas || !window.jspdf) {
+                alert('Required libraries not loaded. Please refresh the page.');
+                return;
+            }
+            
+            const allSections = document.querySelectorAll('.timetable-section');
+            if (allSections.length === 0) {
+                alert('No sections found');
+                return;
+            }
+            
+            try {
+                const elementsToHide = document.querySelectorAll('.back-button, .faculty-analyzer-btn, .save-button, .slot-swap-btn, .conflict-resolver-btn, .whatsapp-share-btn, .section-navigator, .bottom-nav');
+                elementsToHide.forEach(el => el.style.display = 'none');
+                
+                const pdf = new window.jspdf.jsPDF();
+                
+                for (let i = 0; i < allSections.length; i++) {
+                    const section = allSections[i];
+                    
+                    // Show only current section
+                    allSections.forEach(s => s.style.display = 'none');
+                    section.style.display = 'block';
+                    
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                    const canvas = await window.html2canvas(section, {
+                        scale: 1.5,
+                        useCORS: true,
+                        backgroundColor: '#ffffff'
+                    });
+                    
+                    if (i > 0) pdf.addPage();
+                    
+                    const imgData = canvas.toDataURL('image/png');
+                    
+                    // Convert canvas pixels to mm (assuming 96 DPI)
+                    const pixelsToMm = 0.264583;
+                    const imgWidth = canvas.width * pixelsToMm;
+                    const imgHeight = canvas.height * pixelsToMm;
+                    
+                    // Create PDF page with card dimensions + small margin
+                    const margin = 5;
+                    const pageWidth = imgWidth + (2 * margin);
+                    const pageHeight = imgHeight + (2 * margin);
+                    
+                    // Set custom page size for this page
+                    pdf.internal.pageSize.setWidth(pageWidth);
+                    pdf.internal.pageSize.setHeight(pageHeight);
+                    
+                    pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight);
+                }
+                
+                const academicYear = timetableData?.academicYear || '2024-25';
+                const filename = `Timetable_Semester_${academicYear}.pdf`;
+                
+                // Store in timetable vault (metadata only)
+                const vaultData = {
+                    filename: filename,
+                    academicYear: academicYear,
+                    sections: timetableData?.sections || ['5A'],
+                    createdDate: new Date().toISOString()
+                };
+                
+                const existingVault = JSON.parse(localStorage.getItem('timetableVault') || '[]');
+                existingVault.push(vaultData);
+                localStorage.setItem('timetableVault', JSON.stringify(existingVault));
+                
+                pdf.save(filename);
+                
+                // Restore UI
+                allSections.forEach(s => s.style.display = '');
+                allSections[currentSectionIndex]?.classList.add('active');
+                elementsToHide.forEach(el => el.style.display = '');
+                
+                alert(`PDF saved with ${allSections.length} sections!\nRecord stored in Timetable Vault`);
+                
+            } catch (error) {
+                console.error('Save error:', error);
+                alert('Save failed: ' + error.message);
+                
+                // Restore UI even on error
+                const allSections = document.querySelectorAll('.timetable-section');
+                const elementsToHide = document.querySelectorAll('.back-button, .faculty-analyzer-btn, .save-button, .slot-swap-btn, .conflict-resolver-btn, .whatsapp-share-btn, .section-navigator, .bottom-nav');
+                allSections.forEach(s => s.style.display = '');
+                allSections[currentSectionIndex]?.classList.add('active');
+                elementsToHide.forEach(el => el.style.display = '');
+            }
+        }
+
+        function updateSectionInfo() {
+            const sectionInfo = document.getElementById('sectionInfo');
+            const sections = timetableData ? timetableData.sections : ['5A'];
+            sectionInfo.textContent = `${sections[currentSectionIndex]} (${currentSectionIndex + 1}/${totalSections})`;
+            
+            document.getElementById('prevBtn').disabled = currentSectionIndex === 0;
+            document.getElementById('nextBtn').disabled = currentSectionIndex === totalSections - 1;
+        }
+        
+        function nextSection() {
+            if (currentSectionIndex < totalSections - 1) {
+                currentSectionIndex++;
+                showSection(currentSectionIndex);
+            }
+        }
+        
+        function previousSection() {
+            if (currentSectionIndex > 0) {
+                currentSectionIndex--;
+                showSection(currentSectionIndex);
+            }
+        }
+        
+        function showSection(index) {
+            const sections = document.querySelectorAll('.timetable-section');
+            sections.forEach(section => section.classList.remove('active'));
+            
+            const targetSection = document.getElementById(`section-${index}`);
+            if (targetSection) {
+                targetSection.classList.add('active');
+            }
+            
+            currentSectionIndex = index;
+            updateSectionInfo();
+        }
+
+        function openFacultyAnalyzer() {
+            document.getElementById('facultyModal').style.display = 'block';
+        }
+        
+        function closeFacultyModal() {
+            document.getElementById('facultyModal').style.display = 'none';
+            document.getElementById('facultyResults').innerHTML = '';
+        }
+        
+        function analyzeFaculty() {
+            const facultyName = document.getElementById('facultySearch').value.trim();
+            if (!facultyName) {
+                alert('Please enter a faculty name');
+                return;
+            }
+            
+            const results = findFacultySchedule(facultyName);
+            displayFacultyResults(facultyName, results);
+        }
+        
+        function findFacultySchedule(facultyName) {
+            const schedule = [];
+            const sections = document.querySelectorAll('.timetable-section');
+            
+            sections.forEach((section, sectionIndex) => {
+                const sectionName = timetableData ? timetableData.sections[sectionIndex] : '5A';
+                const cells = section.querySelectorAll('.subject-cell');
+                
+                cells.forEach(cell => {
+                    const content = cell.innerHTML;
+                    if (content.includes('<br>') && content.toLowerCase().includes(facultyName.toLowerCase())) {
+                        const parts = content.split('<br>');
+                        const subject = parts[0];
+                        const teacher = parts[1];
+                        
+                        if (teacher && teacher.toLowerCase().includes(facultyName.toLowerCase())) {
+                            const timeSlot = getTimeSlotForCell(cell);
+                            const day = getDayForCell(cell);
+                            
+                            schedule.push({
+                                section: sectionName,
+                                subject: subject,
+                                day: day,
+                                time: timeSlot
+                            });
+                        }
+                    }
+                });
+            });
+            
+            return schedule;
+        }
+        
+        function getTimeSlotForCell(cell) {
+            const row = cell.parentNode;
+            const cellIndex = Array.from(row.children).indexOf(cell);
+            const timeHeaders = document.querySelectorAll('.time-header');
+            return timeHeaders[cellIndex - 1] ? timeHeaders[cellIndex - 1].textContent.replace(/\n/g, ' ') : 'Unknown';
+        }
+        
+        function getDayForCell(cell) {
+            const row = cell.parentNode;
+            const dayCell = row.querySelector('.day-header');
+            return dayCell ? dayCell.textContent : 'Unknown';
+        }
+        
+        function displayFacultyResults(facultyName, schedule) {
+            const resultsDiv = document.getElementById('facultyResults');
+            
+            if (schedule.length === 0) {
+                resultsDiv.innerHTML = `<p>No schedule found for faculty: <strong>${facultyName}</strong></p>`;
+                return;
+            }
+            
+            const aiInsights = generateAIInsights(schedule);
+            lastAnalysisData = { facultyName, schedule, aiInsights };
+            
+            let html = `
+                <div class="faculty-card">
+                    <div class="faculty-name">${facultyName}</div>
+                    <h4>Schedule (${schedule.length} classes):</h4>
+                    ${schedule.map(item => `
+                        <div class="schedule-item">
+                            <strong>${item.section}</strong> - ${item.subject}<br>
+                            <small>${item.day} | ${item.time}</small>
+                        </div>
+                    `).join('')}
+                    
+                    <div class="ai-insights">
+                        <h4>🤖 AI Insights</h4>
+                        ${aiInsights}
+                    </div>
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        function generateAIInsights(schedule) {
+            const totalClasses = schedule.length;
+            const sections = [...new Set(schedule.map(s => s.section))];
+            const subjects = [...new Set(schedule.map(s => s.subject))];
+            const days = [...new Set(schedule.map(s => s.day))];
+            
+            const dayDistribution = {};
+            schedule.forEach(s => {
+                dayDistribution[s.day] = (dayDistribution[s.day] || 0) + 1;
+            });
+            
+            const busiestDay = Object.keys(dayDistribution).reduce((a, b) => 
+                dayDistribution[a] > dayDistribution[b] ? a : b
+            );
+            
+            let insights = `
+                <p><strong>Workload Analysis:</strong></p>
+                <ul>
+                    <li>Total Classes: ${totalClasses} per week</li>
+                    <li>Teaching ${sections.length} section(s): ${sections.join(', ')}</li>
+                    <li>Handling ${subjects.length} subject(s): ${subjects.join(', ')}</li>
+                    <li>Active ${days.length} day(s): ${days.join(', ')}</li>
+                    <li>Busiest Day: ${busiestDay} (${dayDistribution[busiestDay]} classes)</li>
+                </ul>
+                <p><strong>AI Recommendations:</strong></p>
+                <ul>
+            `;
+            
+            if (totalClasses > 20) {
+                insights += '<li>⚠️ High workload detected. Consider redistributing classes.</li>';
+            } else if (totalClasses < 10) {
+                insights += '<li>✅ Light workload. Faculty can handle additional responsibilities.</li>';
+            } else {
+                insights += '<li>✅ Balanced workload distribution.</li>';
+            }
+            
+            if (subjects.length > 3) {
+                insights += '<li>📚 Teaching multiple subjects. Ensure adequate preparation time.</li>';
+            }
+            
+            if (dayDistribution[busiestDay] > 5) {
+                insights += '<li>⏰ Consider spreading classes more evenly across the week.</li>';
+            }
+            
+            insights += '</ul>';
+            return insights;
+        }
+
+
+        
+        function toggleSwapMode() {
+            swapMode = !swapMode;
+            const btn = document.querySelector('.slot-swap-btn');
+            
+            if (swapMode) {
+                btn.textContent = '❌ Exit Swap';
+                btn.style.background = '#dc3545';
+                alert('🔄 Swap Mode Active! Click two cells to swap their content.');
+            } else {
+                btn.textContent = '🔄 Slot Swap';
+                btn.style.background = '#6f42c1';
+                firstSwapCell = null;
+                document.querySelectorAll('.swap-mode').forEach(cell => 
+                    cell.classList.remove('swap-mode')
+                );
+            }
+        }
+        
+        function handleSwapClick(cell) {
+            if (!firstSwapCell) {
+                firstSwapCell = cell;
+                cell.classList.add('swap-mode');
+                alert('First cell selected. Click another cell to swap.');
+            } else {
+                swapCells(firstSwapCell, cell);
+                firstSwapCell.classList.remove('swap-mode');
+                firstSwapCell = null;
+            }
+        }
+        
+        function swapCells(cell1, cell2) {
+            const temp = cell1.innerHTML;
+            const tempColor = cell1.style.backgroundColor;
+            
+            cell1.innerHTML = cell2.innerHTML;
+            cell1.style.backgroundColor = cell2.style.backgroundColor;
+            
+            cell2.innerHTML = temp;
+            cell2.style.backgroundColor = tempColor;
+            
+            alert('✅ Slots swapped successfully!');
+        }
+        
+        function generateSwapSuggestions() {
+            const suggestions = [];
+            const allCells = document.querySelectorAll('.subject-cell');
+            const conflicts = findScheduleConflicts();
+            
+            conflicts.forEach(conflict => {
+                suggestions.push({
+                    type: 'conflict',
+                    message: `🔴 Conflict: ${conflict.faculty} has overlapping classes`,
+                    suggestion: `Consider swapping ${conflict.subject1} with a free slot`
+                });
+            });
+            
+            // AI-powered load balancing suggestions
+            const loadBalance = analyzeWorkloadBalance();
+            if (loadBalance.unbalanced) {
+                suggestions.push({
+                    type: 'balance',
+                    message: '⚠️ Workload imbalance detected',
+                    suggestion: `Move classes from ${loadBalance.overloaded} to ${loadBalance.underloaded}`
+                });
+            }
+            
+            displaySwapSuggestions(suggestions);
+        }
+        
+        function detectAllConflicts() {
+            const conflicts = [];
+            
+            // Faculty conflicts
+            const facultyConflicts = detectFacultyConflicts();
+            conflicts.push(...facultyConflicts);
+            
+            // Subject conflicts
+            const subjectConflicts = detectSubjectConflicts();
+            conflicts.push(...subjectConflicts);
+            
+            // Workload imbalance
+            const workloadIssues = detectWorkloadImbalance();
+            conflicts.push(...workloadIssues);
+            
+            // Class distribution issues
+            const distributionIssues = detectClassDistribution();
+            conflicts.push(...distributionIssues);
+            
+            return conflicts;
+        }
+        
+        function detectFacultyConflicts() {
+            const conflicts = [];
+            const facultySchedule = {};
+            
+            document.querySelectorAll('.subject-cell').forEach(cell => {
+                const content = cell.innerHTML;
+                if (content.includes('<br>')) {
+                    const parts = content.split('<br>');
+                    const faculty = parts[1];
+                    if (faculty) {
+                        const timeSlot = getTimeSlotForCell(cell);
+                        const day = getDayForCell(cell);
+                        const key = `${day}-${timeSlot}`;
+                        
+                        if (!facultySchedule[faculty]) facultySchedule[faculty] = [];
+                        
+                        const existing = facultySchedule[faculty].find(s => s.key === key);
+                        if (existing) {
+                            conflicts.push({
+                                type: 'faculty',
+                                message: `Faculty ${faculty} has overlapping classes`,
+                                details: `${day} ${timeSlot}: ${existing.subject} vs ${parts[0]}`
+                            });
+                        } else {
+                            facultySchedule[faculty].push({ key, subject: parts[0], day, timeSlot });
+                        }
+                    }
+                }
+            });
+            
+            return conflicts;
+        }
+        
+        function detectSubjectConflicts() {
+            const conflicts = [];
+            const subjectCount = {};
+            
+            document.querySelectorAll('.subject-cell').forEach(cell => {
+                const content = cell.innerHTML;
+                if (content.includes('<br>')) {
+                    const subject = content.split('<br>')[0];
+                    subjectCount[subject] = (subjectCount[subject] || 0) + 1;
+                }
+            });
+            
+            Object.keys(subjectCount).forEach(subject => {
+                if (subjectCount[subject] > 8) {
+                    conflicts.push({
+                        type: 'subject',
+                        message: `Subject ${subject} is over-scheduled`,
+                        details: `${subjectCount[subject]} classes per week (recommended: 6-8)`
+                    });
+                } else if (subjectCount[subject] < 3) {
+                    conflicts.push({
+                        type: 'subject',
+                        message: `Subject ${subject} is under-scheduled`,
+                        details: `${subjectCount[subject]} classes per week (recommended: 4-6)`
+                    });
+                }
+            });
+            
+            return conflicts;
+        }
+        
+        function detectWorkloadImbalance() {
+            const conflicts = [];
+            const facultyWorkload = {};
+            
+            document.querySelectorAll('.subject-cell').forEach(cell => {
+                const content = cell.innerHTML;
+                if (content.includes('<br>')) {
+                    const faculty = content.split('<br>')[1];
+                    if (faculty) {
+                        facultyWorkload[faculty] = (facultyWorkload[faculty] || 0) + 1;
+                    }
+                }
+            });
+            
+            const workloads = Object.values(facultyWorkload);
+            const avgWorkload = workloads.reduce((a, b) => a + b, 0) / workloads.length;
+            
+            Object.keys(facultyWorkload).forEach(faculty => {
+                const load = facultyWorkload[faculty];
+                if (load > avgWorkload * 1.5) {
+                    conflicts.push({
+                        type: 'workload',
+                        message: `${faculty} is overloaded`,
+                        details: `${load} classes (avg: ${Math.round(avgWorkload)})`
+                    });
+                } else if (load < avgWorkload * 0.5) {
+                    conflicts.push({
+                        type: 'workload',
+                        message: `${faculty} is underutilized`,
+                        details: `${load} classes (avg: ${Math.round(avgWorkload)})`
+                    });
+                }
+            });
+            
+            return conflicts;
+        }
+        
+        function detectClassDistribution() {
+            const conflicts = [];
+            const dayDistribution = { MON: 0, TUE: 0, WED: 0, THU: 0, FRI: 0, SAT: 0 };
+            
+            document.querySelectorAll('.subject-cell').forEach(cell => {
+                if (cell.innerHTML.trim()) {
+                    const day = getDayForCell(cell);
+                    if (dayDistribution[day] !== undefined) {
+                        dayDistribution[day]++;
+                    }
+                }
+            });
+            
+            const max = Math.max(...Object.values(dayDistribution));
+            const min = Math.min(...Object.values(dayDistribution));
+            
+            if (max - min > 5) {
+                const heavyDay = Object.keys(dayDistribution).find(day => dayDistribution[day] === max);
+                const lightDay = Object.keys(dayDistribution).find(day => dayDistribution[day] === min);
+                
+                conflicts.push({
+                    type: 'distribution',
+                    message: 'Uneven class distribution across days',
+                    details: `${heavyDay}: ${max} classes, ${lightDay}: ${min} classes`
+                });
+            }
+            
+            return conflicts;
+        }
+        
+        function showConflictAlert(conflicts) {
+            const overlay = document.getElementById('conflictOverlay');
+            const alert = document.getElementById('conflictAlert');
+            const list = document.getElementById('conflictList');
+            
+            let html = '';
+            conflicts.forEach(conflict => {
+                const icon = {
+                    'faculty': '👥',
+                    'subject': '📚',
+                    'workload': '⚖️',
+                    'distribution': '📅'
+                }[conflict.type] || '⚠️';
+                
+                html += `
+                    <div class="conflict-item">
+                        <strong>${icon} ${conflict.message}</strong><br>
+                        <small>${conflict.details}</small>
+                    </div>
+                `;
+            });
+            
+            list.innerHTML = html;
+            overlay.style.display = 'block';
+            alert.style.display = 'block';
+        }
+        
+        function closeConflictAlert() {
+            document.getElementById('conflictOverlay').style.display = 'none';
+            document.getElementById('conflictAlert').style.display = 'none';
+        }
+        
+        function autoResolveConflicts() {
+            alert('🤖 Auto-resolve feature coming soon! Use Slot Swap for manual resolution.');
+            closeConflictAlert();
+        }
+        
+        function analyzeWorkloadBalance() {
+            const dayLoad = { MON: 0, TUE: 0, WED: 0, THU: 0, FRI: 0 };
+            const cells = document.querySelectorAll('.subject-cell');
+            
+            cells.forEach(cell => {
+                if (cell.innerHTML.trim()) {
+                    const day = getDayForCell(cell);
+                    if (dayLoad[day] !== undefined) dayLoad[day]++;
+                }
+            });
+            
+            const max = Math.max(...Object.values(dayLoad));
+            const min = Math.min(...Object.values(dayLoad));
+            
+            return {
+                unbalanced: max - min > 3,
+                overloaded: Object.keys(dayLoad).find(day => dayLoad[day] === max),
+                underloaded: Object.keys(dayLoad).find(day => dayLoad[day] === min)
+            };
+        }
+        
+        function displaySwapSuggestions(suggestions) {
+            const suggestionsDiv = document.getElementById('swapSuggestions');
+            
+            if (suggestions.length === 0) {
+                suggestionsDiv.innerHTML = '<p>✅ No swap suggestions needed. Schedule looks optimal!</p>';
+                return;
+            }
+            
+            let html = '<h4>🤖 AI Swap Suggestions:</h4>';
+            suggestions.forEach(suggestion => {
+                html += `
+                    <div class="swap-suggestion">
+                        <strong>${suggestion.message}</strong><br>
+                        <small>${suggestion.suggestion}</small>
+                    </div>
+                `;
+            });
+            
+            suggestionsDiv.innerHTML = html;
+        }
+
+        function openConflictResolver() {
+            const conflicts = detectAllConflicts();
+            if (conflicts.length > 0) {
+                showConflictAlert(conflicts);
+            } else {
+                alert('✅ No conflicts detected! Your timetable looks good.');
+            }
+        }
+        
+        function openSaveModal() {
+            document.getElementById('saveModal').style.display = 'block';
+        }
+        
+        function closeSaveModal() {
+            document.getElementById('saveModal').style.display = 'none';
+        }
+        
+        function openSwapModal() {
+            document.getElementById('swapModal').style.display = 'block';
+        }
+        
+        function closeSwapModal() {
+            document.getElementById('swapModal').style.display = 'none';
+        }
+        
+        function openShareModal() {
+            document.getElementById('shareModal').style.display = 'block';
+        }
+        
+        function closeShareModal() {
+            document.getElementById('shareModal').style.display = 'none';
+        }
+        
+        function saveToCloud() {
+            alert('☁️ Cloud save feature coming soon! Your data will be securely stored.');
+        }
+        
+        function saveTemplate() {
+            const templateName = prompt('Enter template name:');
+            if (templateName) {
+                const templates = JSON.parse(localStorage.getItem('timetableTemplates') || '[]');
+                templates.push({
+                    name: templateName,
+                    data: timetableData,
+                    created: new Date().toISOString()
+                });
+                localStorage.setItem('timetableTemplates', JSON.stringify(templates));
+                alert(`✅ Template "${templateName}" saved successfully!`);
+            }
+            closeSaveModal();
+        }
+        
+        function autoSwapSuggestions() {
+            closeSwapModal();
+            openFacultyAnalyzer();
+            setTimeout(() => generateSwapSuggestions(), 500);
+        }
+        
+        function bulkSwap() {
+            alert('📊 Bulk swap feature coming soon! Perform multiple operations at once.');
+        }
+        
+        function shareOnWhatsApp() {
+            const sections = timetableData ? timetableData.sections : ['5A'];
+            const academicYear = timetableData?.academicYear || '2024-25';
+            const message = `🎓 Timetable Generated!\n\n📅 Academic Year: ${academicYear}\n🏢 Sections: ${sections.join(', ')}\n📄 Total Sections: ${sections.length}\n\n🚀 Generated using MIT Timetable Generator`;
+            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+            window.open(whatsappUrl, '_blank');
+            closeShareModal();
+        }
+        
+        function shareViaEmail() {
+            const sections = timetableData ? timetableData.sections : ['5A'];
+            const academicYear = timetableData?.academicYear || '2024-25';
+            const subject = `Timetable - ${academicYear}`;
+            const body = `Dear Colleague,\n\nPlease find the timetable for Academic Year ${academicYear}.\n\nSections: ${sections.join(', ')}\nTotal Sections: ${sections.length}\n\nGenerated using MIT Timetable Generator.\n\nBest regards`;
+            const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            window.open(mailtoUrl);
+            closeShareModal();
+        }
+        
+        function generateShareLink() {
+            const shareData = btoa(JSON.stringify(timetableData));
+            const shareUrl = `${window.location.origin}${window.location.pathname}?data=${shareData}`;
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                alert('🔗 Share link copied to clipboard!');
+            }).catch(() => {
+                prompt('Copy this share link:', shareUrl);
+            });
+            closeShareModal();
+        }
+        
+        function shareToSocial() {
+            const sections = timetableData ? timetableData.sections : ['5A'];
+            const academicYear = timetableData?.academicYear || '2024-25';
+            const text = `Just generated our timetable for ${academicYear}! 🎓 ${sections.length} sections organized efficiently. #TimetableGenerator #Education`;
+            const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+            window.open(twitterUrl, '_blank');
+            closeShareModal();
+        }
+        
+        function nextStepFromShare() {
+            closeShareModal();
+            nextStep();
+        }
+        
+        function exportOptionsFromShare() {
+            closeShareModal();
+            exportOptions();
+        }
+        
+        function viewSummaryFromShare() {
+            closeShareModal();
+            viewSummary();
+        }
+        
+        function nextStepFromSave() {
+            closeSaveModal();
+            nextStep();
+        }
+        
+        function exportOptionsFromSave() {
+            closeSaveModal();
+            exportOptions();
+        }
+        
+        function viewSummaryFromSave() {
+            closeSaveModal();
+            viewSummary();
+        }
+        
+        function nextStepFromSwap() {
+            closeSwapModal();
+            nextStep();
+        }
+        
+        function exportOptionsFromSwap() {
+            closeSwapModal();
+            exportOptions();
+        }
+        
+        function viewSummaryFromSwap() {
+            closeSwapModal();
+            viewSummary();
+        }
+        
+        function nextStep() {
+            if (totalSections > 1 && currentSectionIndex < totalSections - 1) {
+                alert('🚀 Next: You can now:\n\n• Save your timetable as PDF\n• Check the Timetable Vault\n• Analyze faculty workload\n• Resolve any conflicts\n• Share on WhatsApp\n\n➡️ Moving to next section...');
+                setTimeout(() => nextSection(), 1500);
+            } else if (totalSections > 1) {
+                alert('✅ You are on the last section. All sections completed!\n\n🚀 You can now:\n\n• Save your timetable as PDF\n• Check the Timetable Vault\n• Analyze faculty workload\n• Resolve any conflicts\n• Share on WhatsApp');
+            } else {
+                alert('🚀 Next: You can now:\n\n• Save your timetable as PDF\n• Check the Timetable Vault\n• Analyze faculty workload\n• Resolve any conflicts\n• Share on WhatsApp');
+            }
+        }
+        
+        function exportOptions() {
+            document.getElementById('exportModal').style.display = 'block';
+        }
+        
+        function closeExportModal() {
+            document.getElementById('exportModal').style.display = 'none';
+        }
+        
+        function exportPDF() {
+            closeExportModal();
+            saveTimetable();
+        }
+        
+        function exportExcel() {
+            alert('📊 Excel export feature coming soon! Currently working on implementation.');
+        }
+        
+        function exportImage() {
+            alert('🖼️ Image export feature coming soon! Use PDF export for now.');
+        }
+        
+        function printTimetable() {
+            closeExportModal();
+            window.print();
+        }
+        
+        function viewSummary() {
+            const sections = timetableData ? timetableData.sections : ['5A'];
+            const academicYear = timetableData?.academicYear || '2024-25';
+            const conflicts = detectAllConflicts();
+            
+            const summary = `📈 Timetable Summary\n\n📅 Academic Year: ${academicYear}\n🏢 Total Sections: ${sections.length}\n📝 Sections: ${sections.join(', ')}\n⚠️ Conflicts: ${conflicts.length}\n\n${conflicts.length > 0 ? '🔴 Please resolve conflicts before finalizing!' : '✅ Ready to finalize!'}`;
+            
+            alert(summary);
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const editModal = document.getElementById('editModal');
+            const facultyModal = document.getElementById('facultyModal');
+            const conflictOverlay = document.getElementById('conflictOverlay');
+            
+            if (event.target === editModal) {
+                closeModal();
+            }
+            if (event.target === facultyModal) {
+                closeFacultyModal();
+            }
+            if (event.target === conflictOverlay) {
+                closeConflictAlert();
+            }
+            
+            const exportModal = document.getElementById('exportModal');
+            if (event.target === exportModal) {
+                closeExportModal();
+            }
+            
+            const saveModal = document.getElementById('saveModal');
+            if (event.target === saveModal) {
+                closeSaveModal();
+            }
+            
+            const swapModal = document.getElementById('swapModal');
+            if (event.target === swapModal) {
+                closeSwapModal();
+            }
+            
+            const shareModal = document.getElementById('shareModal');
+            if (event.target === shareModal) {
+                closeShareModal();
+            }
+        }
+    </script>
+</body>
+</html>
