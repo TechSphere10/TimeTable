@@ -1,618 +1,580 @@
 import random
 import json
 import sys
-from typing import List, Dict, Tuple
-import copy
+from supabase.client import create_client, Client
+from typing import List, Dict, Any, Tuple
+import os
 
-class Subject:
-    def __init__(self, name: str, credits: int, hours: int, subject_type: str):
-        self.name = name
-        self.credits = credits
-        self.hours = hours
-        self.type = subject_type  # 'theory', 'lab', 'mcq', 'free'
-
-class Faculty:
-    def __init__(self, name: str, initials: str, faculty_type: str):
-        self.name = name
-        self.initials = initials
-        self.type = faculty_type
-
-class Assignment:
-    def __init__(self, subject: Subject, faculty: Faculty, section: str):
-        self.subject = subject
-        self.faculty = faculty
-        self.section = section
-
-class TimeSlot:
-    def __init__(self, day: int, period: int, time_str: str):
-        self.day = day  # 0-5 (Mon-Sat)
-        self.period = period  # 0-8
-        self.time_str = time_str
-        self.is_break = time_str in ['BREAK', 'LUNCH']
-
-class TimetableGene:
-    def __init__(self, assignment: Assignment, time_slot: TimeSlot):
-        self.assignment = assignment
-        self.time_slot = time_slot
-
-class Timetable:
-    def __init__(self, sections: int):
-        self.sections = sections
-        self.genes: List[TimetableGene] = []
-        self.fitness = 0
+class SupabaseTimetableGA:
+    def __init__(self):
+        self.supabase_url = "https://bkmzyhroignpjebfpqug.supabase.co"
+        self.supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrbXp5aHJvaWducGplYmZwcXVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0MjA1NDUsImV4cCI6MjA3Mjk5NjU0NX0.ICE2eYzFZvz0dtNpAa5YlJTZD-idc2J76wn1ZeHwwck"
+        self.supabase: Client = create_client(self.supabase_url, self.supabase_key)
         
-        # Time slots configuration
+        self.days = ['Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
         self.time_slots = [
-            TimeSlot(day, period, time_str) 
-            for day in range(6)  # Mon-Sat
-            for period, time_str in enumerate([
-                '9:00-9:50', '9:50-10:40', 'BREAK', '11:00-11:50', 
-                '11:50-12:40', 'LUNCH', '1:30-2:20', '2:20-3:10', '3:10-4:00'
-            ])
+            {'start': '09:00', 'end': '10:00', 'slot_id': 0},
+            {'start': '10:00', 'end': '11:00', 'slot_id': 1},
+            {'start': '11:15', 'end': '12:15', 'slot_id': 2},
+            {'start': '12:15', 'end': '13:15', 'slot_id': 3},
+            {'start': '14:00', 'end': '15:00', 'slot_id': 4},
+            {'start': '15:00', 'end': '16:00', 'slot_id': 5}
         ]
         
-        # Filter out break periods for allocation
-        self.available_slots = [slot for slot in self.time_slots if not slot.is_break]
-
-class GeneticTimetableGenerator:
-    def __init__(self, assignments: List[Assignment], sections: int):
-        self.assignments = assignments
-        self.sections = sections
+        # Continuous slot groups for labs (2-hour blocks)
+        self.continuous_slots = [[0, 1], [2, 3], [4, 5]]
+        
         self.population_size = 50
-        self.generations = 100
+        self.generations = 150
         self.mutation_rate = 0.1
-        self.crossover_rate = 0.8
-        
-        # Create time slots
-        self.time_slots = [
-            TimeSlot(day, period, time_str) 
-            for day in range(6)  # Mon-Sat
-            for period, time_str in enumerate([
-                '9:00-9:50', '9:50-10:40', 'BREAK', '11:00-11:50', 
-                '11:50-12:40', 'LUNCH', '1:30-2:20', '2:20-3:10', '3:10-4:00'
-            ])
-        ]
-        
-        self.available_slots = [slot for slot in self.time_slots if not slot.is_break]
-        
-    def create_individual(self) -> Timetable:
-        """Create a random timetable individual"""
-        timetable = Timetable(self.sections)
-        
-        for assignment in self.assignments:
-            hours_needed = assignment.subject.hours
-            allocated_hours = 0
+        self.crossover_rate = 0.85
+
+    def fetch_data(self, department: str, section: str):
+        """Fetch subjects, faculty, and existing timetables from Supabase"""
+        try:
+            # Get subjects for department with hours per week
+            subjects_response = self.supabase.table('subjects').select('*').eq('department', department).execute()
+            subjects = subjects_response.data
             
-            # For lab subjects, try to allocate consecutive hours
-            if assignment.subject.type == 'lab':
-                allocated_hours = self._allocate_lab_hours(timetable, assignment, hours_needed)
-            else:
-                allocated_hours = self._allocate_theory_hours(timetable, assignment, hours_needed)
-        
-        return timetable
+            # Get faculty for department
+            faculty_response = self.supabase.table('faculty').select('*').eq('department', department).execute()
+            faculty = faculty_response.data
+            
+            # Get existing timetables to avoid conflicts
+            existing_response = self.supabase.table('timetables').select('*').execute()
+            existing_timetables = existing_response.data
+            
+            return subjects, faculty, existing_timetables
+            
+        except Exception as e:
+            print(f"Error fetching data: {e}", file=sys.stderr)
+            return [], [], []
+
+    def load_section_assignments(self, section_data):
+        """Load faculty assignments from timetable-new.htm data"""
+        assignments = {}
+        if section_data and 'subjects' in section_data:
+            for subject_code, faculty_name in section_data['subjects'].items():
+                assignments[subject_code] = faculty_name
+        return assignments
     
-    def _allocate_lab_hours(self, timetable: Timetable, assignment: Assignment, hours_needed: int) -> int:
-        """Allocate consecutive hours for lab subjects"""
-        allocated = 0
-        attempts = 0
-        max_attempts = 50
-        
-        while allocated < hours_needed and attempts < max_attempts:
-            # Try to find consecutive slots
-            day = random.randint(0, 5)
-            start_period = random.choice([0, 1, 3, 4, 6, 7])  # Avoid break periods
-            
-            # Check if we can allocate consecutive hours
-            consecutive_slots = []
-            for i in range(2):  # Lab needs 2 consecutive hours
-                period = start_period + i
-                if period < 9 and period not in [2, 5]:  # Skip break periods
-                    slot = next((s for s in self.available_slots 
-                               if s.day == day and s.period == period), None)
-                    if slot and not self._is_slot_occupied(timetable, assignment.section, slot):
-                        consecutive_slots.append(slot)
-                    else:
-                        break
-            
-            if len(consecutive_slots) >= 2:
-                for slot in consecutive_slots[:2]:
-                    gene = TimetableGene(assignment, slot)
-                    timetable.genes.append(gene)
-                    allocated += 1
-                    if allocated >= hours_needed:
-                        break
-            
-            attempts += 1
-        
-        return allocated
-    
-    def _allocate_theory_hours(self, timetable: Timetable, assignment: Assignment, hours_needed: int) -> int:
-        """Allocate hours for theory subjects with smart distribution"""
-        allocated = 0
-        attempts = 0
-        max_attempts = 200
-        
-        # Prefer distribution across different days
-        used_days = set()
-        
-        while allocated < hours_needed and attempts < max_attempts:
-            slot = random.choice(self.available_slots)
-            
-            if not self._is_slot_occupied(timetable, assignment.section, slot):
-                # Special handling for different subject types
-                should_allocate = True
+    def get_subject_hours_from_db(self, department, subject_codes):
+        """Get exact weekly hours for subjects from database"""
+        try:
+            subject_hours = {}
+            for subject_code in subject_codes:
+                # Get from Supabase database
+                if department:
+                    response = self.supabase.table('subjects').select('weekly_hours, type').eq('department', department).eq('name', subject_code).execute()
+                    
+                    if response.data and len(response.data) > 0:
+                        subject_data = response.data[0]
+                        weekly_hours = int(subject_data.get('weekly_hours', 3))
+                        subject_type = subject_data.get('type', 'theory').lower()
+                        
+                        subject_hours[subject_code] = {
+                            'weekly_hours': weekly_hours,
+                            'type': subject_type
+                        }
+                        print(f"Subject {subject_code}: {weekly_hours} hours/week, type: {subject_type}", file=sys.stderr)
+                        continue
                 
-                if assignment.subject.type == 'mcq':
-                    # MCQ prefers after lunch, but allow morning if needed
-                    if slot.period >= 6:  # After lunch periods
-                        should_allocate = True
-                    elif allocated == 0 and attempts > 50:  # Allow morning if struggling
-                        should_allocate = random.random() < 0.5
-                    else:
-                        should_allocate = random.random() < 0.2
-                elif assignment.subject.type == 'free':
-                    # Free periods prefer end of day
-                    should_allocate = slot.period >= 7 or random.random() < 0.3
-                else:
-                    # Regular theory - prefer spreading across days
-                    if slot.day not in used_days:
-                        should_allocate = True
-                    elif len(used_days) >= 3:  # If already spread, allow same day
-                        should_allocate = True
-                    else:
-                        should_allocate = random.random() < 0.6
-                
-                if should_allocate:
-                    gene = TimetableGene(assignment, slot)
-                    timetable.genes.append(gene)
-                    used_days.add(slot.day)
-                    allocated += 1
+                # Default if not found
+                subject_hours[subject_code] = {
+                    'weekly_hours': 3,
+                    'type': 'theory'
+                }
+                print(f"Subject {subject_code}: Using default 3 hours/week", file=sys.stderr)
             
-            attempts += 1
-        
-        return allocated
-    
-    def _is_slot_occupied(self, timetable: Timetable, section: str, slot: TimeSlot) -> bool:
-        """Check if a time slot is already occupied"""
-        for gene in timetable.genes:
-            if (gene.assignment.section == section and 
-                gene.time_slot.day == slot.day and 
-                gene.time_slot.period == slot.period):
+            return subject_hours
+            
+        except Exception as e:
+            print(f"Error getting subject hours for {department}: {e}", file=sys.stderr)
+            return {code: {'weekly_hours': 3, 'type': 'theory'} for code in subject_codes}
+
+    def check_faculty_conflict(self, faculty_name: str, day: str, slot_id: int, existing_timetables: List[Dict]) -> bool:
+        """Check if faculty has conflict at given time"""
+        for timetable in existing_timetables:
+            if (timetable.get('faculty_name') == faculty_name and 
+                timetable.get('day') == day and 
+                timetable.get('time_slot') == slot_id):
                 return True
         return False
-    
-    def calculate_fitness(self, timetable: Timetable) -> float:
-        """Calculate comprehensive fitness score for a timetable"""
-        fitness = 100.0
+
+    def create_individual(self, subjects: List[Dict], section: str, existing_timetables: List[Dict], section_data: Dict) -> Dict:
+        """Create random timetable using exact weekly hours from database"""
+        timetable = {day: {slot: None for slot in range(6)} for day in self.days}
         
-        # Critical constraints (heavy penalties)
-        faculty_conflicts = self._check_faculty_conflicts(timetable)
-        fitness -= faculty_conflicts * 15  # Increased penalty
-        
-        section_conflicts = self._check_section_conflicts(timetable)
-        fitness -= section_conflicts * 20  # Very heavy penalty
-        
-        # Important constraints (medium penalties)
-        lab_violations = self._check_lab_violations(timetable)
-        fitness -= lab_violations * 12
-        
-        hours_violations = self._check_hours_allocation(timetable)
-        fitness -= hours_violations * 8
-        
-        # Preference constraints (light penalties)
-        mcq_violations = self._check_mcq_placement(timetable)
-        fitness -= mcq_violations * 3
-        
-        free_period_violations = self._check_free_period_placement(timetable)
-        fitness -= free_period_violations * 4
-        
-        # Bonuses for good practices
-        balance_bonus = self._calculate_balance_bonus(timetable)
-        fitness += balance_bonus
-        
-        distribution_bonus = self._calculate_distribution_bonus(timetable)
-        fitness += distribution_bonus
-        
-        timetable.fitness = max(0, fitness)
-        return timetable.fitness
-    
-    def _check_section_conflicts(self, timetable: Timetable) -> int:
-        """Check for multiple subjects assigned to same section at same time"""
-        conflicts = 0
-        section_schedule = {}
-        
-        for gene in timetable.genes:
-            key = (gene.assignment.section, gene.time_slot.day, gene.time_slot.period)
-            if key in section_schedule:
-                conflicts += 1
-            else:
-                section_schedule[key] = gene
-        
-        return conflicts
-    
-    def _check_hours_allocation(self, timetable: Timetable) -> int:
-        """Check if subjects get their required hours"""
-        violations = 0
-        subject_hours = {}
-        
-        # Count allocated hours for each subject-section combination
-        for gene in timetable.genes:
-            key = (gene.assignment.subject.name, gene.assignment.section)
-            if key not in subject_hours:
-                subject_hours[key] = 0
-            subject_hours[key] += 1
-        
-        # Check against required hours
-        for assignment in self.assignments:
-            key = (assignment.subject.name, assignment.section)
-            allocated = subject_hours.get(key, 0)
-            required = assignment.subject.hours
-            
-            if allocated < required:
-                violations += (required - allocated)
-        
-        return violations
-    
-    def _calculate_distribution_bonus(self, timetable: Timetable) -> float:
-        """Bonus for good distribution of subjects across time slots"""
-        bonus = 0
-        
-        # Check for variety in each day
-        for section_num in range(1, self.sections + 1):
-            section = chr(64 + section_num)
-            
-            for day in range(6):  # Monday to Saturday
-                day_subjects = set()
-                for gene in timetable.genes:
-                    if (gene.assignment.section == section and 
-                        gene.time_slot.day == day):
-                        day_subjects.add(gene.assignment.subject.name)
-                
-                # Bonus for variety (more different subjects in a day)
-                if len(day_subjects) >= 3:
-                    bonus += 2
-                elif len(day_subjects) >= 2:
-                    bonus += 1
-        
-        return bonus
-    
-    def _check_faculty_conflicts(self, timetable: Timetable) -> int:
-        """Check for faculty teaching conflicts"""
-        conflicts = 0
-        time_faculty_map = {}
-        
-        for gene in timetable.genes:
-            key = (gene.time_slot.day, gene.time_slot.period)
-            if key not in time_faculty_map:
-                time_faculty_map[key] = set()
-            
-            if gene.assignment.faculty.initials in time_faculty_map[key]:
-                conflicts += 1
-            else:
-                time_faculty_map[key].add(gene.assignment.faculty.initials)
-        
-        return conflicts
-    
-    def _check_lab_violations(self, timetable: Timetable) -> int:
-        """Check if lab subjects have consecutive hours"""
-        violations = 0
-        lab_genes = [gene for gene in timetable.genes if gene.assignment.subject.type == 'lab']
-        
-        # Group lab genes by assignment and section
-        lab_groups = {}
-        for gene in lab_genes:
-            key = (gene.assignment.subject.name, gene.assignment.section)
-            if key not in lab_groups:
-                lab_groups[key] = []
-            lab_groups[key].append(gene)
-        
-        for genes in lab_groups.values():
-            if len(genes) >= 2:
-                # Check if any two genes are consecutive
-                genes.sort(key=lambda g: (g.time_slot.day, g.time_slot.period))
-                consecutive_found = False
-                for i in range(len(genes) - 1):
-                    if (genes[i].time_slot.day == genes[i+1].time_slot.day and
-                        genes[i+1].time_slot.period - genes[i].time_slot.period == 1):
-                        consecutive_found = True
-                        break
-                if not consecutive_found:
-                    violations += 1
-        
-        return violations
-    
-    def _check_mcq_placement(self, timetable: Timetable) -> int:
-        """Check MCQ placement preference (after lunch)"""
-        violations = 0
-        mcq_genes = [gene for gene in timetable.genes if gene.assignment.subject.type == 'mcq']
-        
-        for gene in mcq_genes:
-            if gene.time_slot.period < 6:  # Before lunch
-                violations += 1
-        
-        return violations
-    
-    def _check_free_period_placement(self, timetable: Timetable) -> int:
-        """Check if free periods are placed at the end"""
-        violations = 0
-        free_genes = [gene for gene in timetable.genes if gene.assignment.subject.type == 'free']
-        
-        for gene in free_genes:
-            if gene.time_slot.period < 7:  # Not in last periods
-                violations += 1
-        
-        return violations
-    
-    def _calculate_balance_bonus(self, timetable: Timetable) -> float:
-        """Calculate bonus for balanced distribution"""
-        day_counts = [0] * 6
-        for gene in timetable.genes:
-            day_counts[gene.time_slot.day] += 1
-        
-        # Calculate standard deviation
-        mean = sum(day_counts) / len(day_counts)
-        variance = sum((x - mean) ** 2 for x in day_counts) / len(day_counts)
-        std_dev = variance ** 0.5
-        
-        # Lower standard deviation = better balance = higher bonus
-        return max(0, 10 - std_dev)
-    
-    def crossover(self, parent1: Timetable, parent2: Timetable) -> Tuple[Timetable, Timetable]:
-        """Perform crossover between two parent timetables"""
-        if random.random() > self.crossover_rate:
-            return copy.deepcopy(parent1), copy.deepcopy(parent2)
-        
-        child1 = Timetable(self.sections)
-        child2 = Timetable(self.sections)
-        
-        # Single point crossover
-        crossover_point = random.randint(1, len(parent1.genes) - 1)
-        
-        child1.genes = parent1.genes[:crossover_point] + parent2.genes[crossover_point:]
-        child2.genes = parent2.genes[:crossover_point] + parent1.genes[crossover_point:]
-        
-        return child1, child2
-    
-    def mutate(self, timetable: Timetable) -> Timetable:
-        """Perform mutation on a timetable"""
-        if random.random() > self.mutation_rate:
+        section_assignments = self.load_section_assignments(section_data)
+        if not section_assignments:
             return timetable
         
-        if len(timetable.genes) > 0:
-            # Select random gene to mutate
-            gene_index = random.randint(0, len(timetable.genes) - 1)
-            gene = timetable.genes[gene_index]
+        department = getattr(self, '_current_department', None)
+        subject_hours = self.get_subject_hours_from_db(department, list(section_assignments.keys()))
+        
+        # Create exact sessions based on weekly hours
+        all_sessions = []
+        for subject_code, faculty_name in section_assignments.items():
+            hours_info = subject_hours.get(subject_code, {'weekly_hours': 3, 'type': 'theory'})
+            weekly_hours = int(hours_info['weekly_hours'])
+            subject_type = hours_info['type'].lower()
             
-            # Find a new valid time slot
-            attempts = 0
-            while attempts < 20:
-                new_slot = random.choice(self.available_slots)
-                if not self._is_slot_occupied_except(timetable, gene.assignment.section, new_slot, gene_index):
-                    timetable.genes[gene_index] = TimetableGene(gene.assignment, new_slot)
-                    break
-                attempts += 1
+            print(f"Creating sessions for {subject_code}: {weekly_hours} hours, type: {subject_type}", file=sys.stderr)
+            
+            if subject_type == 'lab' or subject_code.endswith('L'):
+                # Labs: place in 2-hour continuous blocks
+                sessions_needed = weekly_hours // 2
+                for _ in range(sessions_needed):
+                    all_sessions.append({
+                        'subject': subject_code, 'faculty': faculty_name, 'type': 'lab', 'slots': 2
+                    })
+            else:
+                # Theory: place in individual 1-hour slots
+                for _ in range(weekly_hours):
+                    all_sessions.append({
+                        'subject': subject_code, 'faculty': faculty_name, 'type': 'theory', 'slots': 1
+                    })
+        
+        print(f"Total sessions to place: {len(all_sessions)}", file=sys.stderr)
+        random.shuffle(all_sessions)
+        
+        # Track constraints
+        daily_subjects = {day: set() for day in self.days}
+        daily_labs = {day: set() for day in self.days}
+        
+        # Place sessions with strict constraints
+        for session in all_sessions:
+            self._place_session_with_constraints(timetable, session, daily_subjects, daily_labs, existing_timetables, section)
         
         return timetable
     
-    def _is_slot_occupied_except(self, timetable: Timetable, section: str, slot: TimeSlot, except_index: int) -> bool:
-        """Check if slot is occupied, excluding a specific gene"""
-        for i, gene in enumerate(timetable.genes):
-            if (i != except_index and 
-                gene.assignment.section == section and 
-                gene.time_slot.day == slot.day and 
-                gene.time_slot.period == slot.period):
-                return True
-        return False
-    
-    def generate(self) -> Timetable:
-        """Generate timetable using genetic algorithm"""
-        print(f"Starting genetic algorithm with {len(self.assignments)} assignments for {self.sections} sections")
+    def _place_session_with_constraints(self, timetable, session, daily_subjects, daily_labs, existing_timetables, section):
+        """Place session with strict constraint enforcement"""
+        subject = session['subject']
+        faculty = session['faculty']
+        session_type = session['type']
         
-        # Initialize population with diverse individuals
+        if session_type == 'lab':
+            # Find available continuous slots for lab
+            available_slots = []
+            for day in self.days:
+                # No same subject on same day
+                if subject in daily_subjects[day]:
+                    continue
+                    
+                # Only one lab per day
+                if daily_labs[day]:
+                    continue
+                    
+                # Skip Friday last period (keep it free)
+                if day == 'Friday':
+                    continue
+                    
+                for slot_group in self.continuous_slots:
+                    # Check if both slots are free and no faculty conflict
+                    if all(timetable[day][slot] is None and 
+                           not self.check_faculty_conflict(faculty, day, slot, existing_timetables)
+                           for slot in slot_group):
+                        available_slots.append((day, slot_group))
+            
+            if available_slots:
+                day, slot_group = random.choice(available_slots)
+                display_name = f"{subject} Lab" if not subject.endswith('Lab') else subject
+                
+                for slot in slot_group:
+                    timetable[day][slot] = {
+                        'subject_code': subject, 'subject_name': display_name, 'faculty_name': faculty,
+                        'section': section, 'room': f"Lab-{random.randint(1, 10)}", 'type': 'lab'
+                    }
+                
+                daily_subjects[day].add(subject)
+                daily_labs[day].add(subject)
+                
+        else:
+            # Theory subject placement
+            available_slots = []
+            for day in self.days:
+                # No same subject on same day
+                if subject in daily_subjects[day]:
+                    continue
+                    
+                for slot in range(6):
+                    # Skip Friday last period (keep it free)
+                    if day == 'Friday' and slot == 5:
+                        continue
+                        
+                    if (timetable[day][slot] is None and 
+                        not self.check_faculty_conflict(faculty, day, slot, existing_timetables)):
+                        available_slots.append((day, slot))
+            
+            if available_slots:
+                day, slot = random.choice(available_slots)
+                timetable[day][slot] = {
+                    'subject_code': subject, 'subject_name': subject, 'faculty_name': faculty,
+                    'section': section, 'room': f"Room-{random.randint(101, 120)}", 'type': 'theory'
+                }
+                daily_subjects[day].add(subject)
+    
+    def _is_full_lab_day(self, timetable, day):
+        """Check if day already has too many lab sessions"""
+        lab_count = sum(1 for slot in range(6) 
+                       if timetable[day][slot] and timetable[day][slot].get('type') == 'lab')
+        return lab_count >= 4  # Max 2 lab sessions (4 slots) per day
+
+    def calculate_fitness(self, individual: Dict, existing_timetables: List[Dict], section_data: Dict) -> float:
+        """Calculate comprehensive fitness score with strict constraints"""
+        fitness = 1000.0  # Start with higher base score
+        
+        # Critical constraint: Faculty conflicts (highest penalty)
+        faculty_slots = {}
+        for day in individual:
+            for slot_id in individual[day]:
+                entry = individual[day][slot_id]
+                if entry:
+                    faculty = entry['faculty_name']
+                    key = f"{day}-{slot_id}"
+                    
+                    if faculty not in faculty_slots:
+                        faculty_slots[faculty] = set()
+                    
+                    if key in faculty_slots[faculty]:
+                        fitness -= 100  # Severe penalty for internal conflicts
+                    else:
+                        faculty_slots[faculty].add(key)
+                    
+                    # Check against existing timetables (cross-section conflicts)
+                    if self.check_faculty_conflict(faculty, day, slot_id, existing_timetables):
+                        fitness -= 150  # Maximum penalty for external conflicts
+        
+        # Lab continuity check (critical for labs)
+        lab_continuity_score = self._check_lab_continuity(individual)
+        fitness += lab_continuity_score
+        
+        # Subject distribution and daily repetition
+        daily_subjects = {day: {} for day in self.days}
+        weekly_subject_count = {}
+        
+        for day in individual:
+            for slot_id in individual[day]:
+                entry = individual[day][slot_id]
+                if entry:
+                    subject_code = entry['subject_code']
+                    weekly_subject_count[subject_code] = weekly_subject_count.get(subject_code, 0) + 1
+                    daily_subjects[day][subject_code] = daily_subjects[day].get(subject_code, 0) + 1
+        
+        # Strict penalty for same subject multiple times on same day
+        for day in daily_subjects:
+            for subject_code, count in daily_subjects[day].items():
+                if count > 2:  # Only labs should have 2 continuous slots
+                    fitness -= (count - 2) * 100
+                elif count > 1 and not any(individual[day][slot] and 
+                                         individual[day][slot].get('type') == 'lab' and 
+                                         individual[day][slot].get('subject_code') == subject_code 
+                                         for slot in range(6)):
+                    # Theory subject repeated on same day
+                    fitness -= (count - 1) * 75
+        
+        # Strict weekly hours validation (critical constraint)
+        section_assignments = self.load_section_assignments(section_data)
+        if section_assignments:
+            department = getattr(self, '_current_department', None)
+            subject_hours = self.get_subject_hours_from_db(department, list(section_assignments.keys()))
+            for subject_code, expected_hours in subject_hours.items():
+                actual_hours = weekly_subject_count.get(subject_code, 0)
+                expected = int(expected_hours.get('weekly_hours', 3))
+                if actual_hours == expected:
+                    fitness += 50  # Bonus for exact match
+                else:
+                    fitness -= abs(actual_hours - expected) * 100  # Heavy penalty for mismatch
+        
+        # Friday last period must be free (institutional rule)
+        if individual.get('Friday', {}).get(5) is not None:
+            fitness -= 100  # Heavy penalty for using Friday last period
+        
+        # Bonus for other free last periods
+        other_days_free = sum(1 for day in ['Tuesday', 'Wednesday', 'Thursday', 'Saturday'] 
+                             if not individual.get(day, {}).get(5))
+        fitness += other_days_free * 5
+        
+        # Daily workload balance
+        daily_counts = {day: len([slot for slot in individual[day] if individual[day][slot]]) for day in individual}
+        if daily_counts:
+            max_daily = max(daily_counts.values())
+            min_daily = min(daily_counts.values())
+            if max_daily - min_daily > 3:
+                fitness -= (max_daily - min_daily) * 10
+        
+        # Faculty free periods at end of day (optimization)
+        fitness += self._calculate_faculty_optimization(individual)
+        
+        return max(0, fitness)
+    
+    def _check_lab_continuity(self, individual: Dict) -> float:
+        """Check if labs are placed in proper continuous slots"""
+        score = 0
+        
+        for day in individual:
+            for slot_group in self.continuous_slots:
+                slots_in_group = [individual[day].get(slot) for slot in slot_group]
+                
+                # Check if both slots have the same lab subject
+                if all(slot and slot.get('type') == 'lab' for slot in slots_in_group):
+                    if slots_in_group[0]['subject_code'] == slots_in_group[1]['subject_code']:
+                        score += 50  # Bonus for proper lab continuity
+                    else:
+                        score -= 30  # Penalty for different labs in continuous slots
+        
+        return score
+    
+    def _calculate_faculty_optimization(self, individual: Dict) -> float:
+        """Calculate faculty schedule optimization score"""
+        score = 0
+        faculty_daily_slots = {}
+        
+        # Track faculty daily schedules
+        for day in individual:
+            for slot_id in individual[day]:
+                entry = individual[day][slot_id]
+                if entry:
+                    faculty = entry['faculty_name']
+                    if faculty not in faculty_daily_slots:
+                        faculty_daily_slots[faculty] = {}
+                    if day not in faculty_daily_slots[faculty]:
+                        faculty_daily_slots[faculty][day] = []
+                    faculty_daily_slots[faculty][day].append(slot_id)
+        
+        # Bonus for faculty having free periods at end of day
+        for faculty, daily_schedule in faculty_daily_slots.items():
+            for day, slots in daily_schedule.items():
+                if slots:
+                    max_slot = max(slots)
+                    if max_slot < 5:  # Faculty finishes before last period
+                        score += (5 - max_slot) * 2
+        
+        return score
+
+    def crossover(self, parent1: Dict, parent2: Dict) -> Dict:
+        """Create offspring through crossover"""
+        child = {}
+        
+        for day in self.days:
+            child[day] = {}
+            for slot_id in range(6):
+                if random.random() < 0.5:
+                    child[day][slot_id] = parent1[day].get(slot_id)
+                else:
+                    child[day][slot_id] = parent2[day].get(slot_id)
+        
+        return child
+
+    def mutate(self, individual: Dict, subjects: List[Dict], section: str, existing_timetables: List[Dict], section_data: Dict) -> Dict:
+        """Mutate individual randomly"""
+        mutated = json.loads(json.dumps(individual))
+        section_assignments = self.load_section_assignments(section_data)
+        
+        for day in self.days:
+            for slot_id in range(6):
+                if random.random() < self.mutation_rate:
+                    if random.random() < 0.6 and section_assignments:
+                        subject_code = random.choice(list(section_assignments.keys()))
+                        faculty_name = section_assignments[subject_code]
+                        
+                        if not self.check_faculty_conflict(faculty_name, day, slot_id, existing_timetables):
+                            mutated[day][slot_id] = {
+                                'subject_code': subject_code, 'subject_name': subject_code,
+                                'faculty_name': faculty_name, 'section': section,
+                                'room': f"Room-{random.randint(101, 120)}"
+                            }
+                    else:
+                        mutated[day][slot_id] = None
+        
+        return mutated
+
+    def evolve_section(self, department: str, section: str, section_data: Dict) -> Dict:
+        """Evolve timetable for a specific section"""
+        print(f"Generating timetable for {department} {section}...", file=sys.stderr)
+        
+        # Store current department for use in other methods
+        self._current_department = department
+        
+        subjects, faculty, existing_timetables = self.fetch_data(department, section)
+        
+        if not subjects:
+            print(f"No subjects found for {department} - {section}", file=sys.stderr)
+            return {}
+        
+        # Create initial population
         population = []
-        for i in range(self.population_size):
-            individual = self.create_individual()
-            self.calculate_fitness(individual)
+        for _ in range(self.population_size):
+            individual = self.create_individual(subjects, section, existing_timetables, section_data)
             population.append(individual)
-            if i % 10 == 0:
-                print(f"Created individual {i+1}/{self.population_size}")
         
         best_fitness = 0
         best_individual = None
-        stagnation_count = 0
         
         for generation in range(self.generations):
-            # Sort by fitness
-            population.sort(key=lambda x: x.fitness, reverse=True)
+            # Calculate fitness
+            fitness_scores = []
+            for individual in population:
+                fitness = self.calculate_fitness(individual, existing_timetables, section_data)
+                fitness_scores.append(fitness)
             
-            # Track best individual
-            current_best_fitness = population[0].fitness
-            if current_best_fitness > best_fitness:
-                best_fitness = current_best_fitness
-                best_individual = copy.deepcopy(population[0])
-                stagnation_count = 0
-            else:
-                stagnation_count += 1
-            
-            # Early termination if fitness is good enough
-            if best_fitness >= 95.0:
-                print(f"Excellent solution found at generation {generation} with fitness {best_fitness:.2f}")
-                break
-            
-            # Increase mutation rate if stagnating
-            if stagnation_count > 20:
-                self.mutation_rate = min(0.3, self.mutation_rate * 1.1)
-            else:
-                self.mutation_rate = max(0.1, self.mutation_rate * 0.99)
+            # Track best
+            max_fitness = max(fitness_scores) if fitness_scores else 0
+            if max_fitness > best_fitness:
+                best_fitness = max_fitness
+                best_individual = population[fitness_scores.index(max_fitness)]
             
             # Selection and reproduction
             new_population = []
             
-            # Keep best individuals (elitism)
-            elite_count = max(2, self.population_size // 10)
-            new_population.extend([copy.deepcopy(ind) for ind in population[:elite_count]])
+            # Elitism - keep best 30%
+            elite_count = int(self.population_size * 0.3)
+            elite_indices = sorted(range(len(fitness_scores)), key=lambda i: fitness_scores[i], reverse=True)[:elite_count]
+            new_population.extend([population[i] for i in elite_indices])
             
-            # Generate offspring
+            # Generate rest through crossover and mutation
             while len(new_population) < self.population_size:
-                parent1 = self._tournament_selection(population)
-                parent2 = self._tournament_selection(population)
+                parent1 = self.tournament_selection(population, fitness_scores)
+                parent2 = self.tournament_selection(population, fitness_scores)
                 
-                child1, child2 = self.crossover(parent1, parent2)
-                child1 = self.mutate(child1)
-                child2 = self.mutate(child2)
+                if random.random() < self.crossover_rate:
+                    child = self.crossover(parent1, parent2)
+                else:
+                    child = json.loads(json.dumps(parent1))
                 
-                # Repair invalid solutions
-                child1 = self._repair_timetable(child1)
-                child2 = self._repair_timetable(child2)
-                
-                self.calculate_fitness(child1)
-                self.calculate_fitness(child2)
-                
-                new_population.extend([child1, child2])
+                child = self.mutate(child, subjects, section, existing_timetables, section_data)
+                new_population.append(child)
             
-            population = new_population[:self.population_size]
+            population = new_population
             
-            # Print progress
-            if generation % 10 == 0:
-                avg_fitness = sum(ind.fitness for ind in population) / len(population)
-                print(f"Generation {generation}: Best={best_fitness:.2f}, Avg={avg_fitness:.2f}, Mutation={self.mutation_rate:.3f}")
+            if generation % 20 == 0:
+                print(f"Generation {generation}: Best fitness = {best_fitness:.2f}", file=sys.stderr)
         
-        final_best = best_individual if best_individual else population[0]
-        print(f"Final best fitness: {final_best.fitness:.2f}")
-        return final_best
-    
-    def _repair_timetable(self, timetable: Timetable) -> Timetable:
-        """Repair invalid timetable by fixing obvious conflicts"""
-        # Remove duplicate assignments for same section at same time
-        seen_slots = set()
-        valid_genes = []
+        final_timetable = best_individual or population[0]
         
-        for gene in timetable.genes:
-            slot_key = (gene.assignment.section, gene.time_slot.day, gene.time_slot.period)
-            if slot_key not in seen_slots:
-                seen_slots.add(slot_key)
-                valid_genes.append(gene)
+        if final_timetable:
+            print(f"Final timetable fitness: {best_fitness:.2f}", file=sys.stderr)
         
-        timetable.genes = valid_genes
-        return timetable
-    
-    def _tournament_selection(self, population: List[Timetable]) -> Timetable:
-        """Tournament selection for parent selection"""
-        tournament_size = 5
-        tournament = random.sample(population, min(tournament_size, len(population)))
-        return max(tournament, key=lambda x: x.fitness)
-    
-    def timetable_to_dict(self, timetable: Timetable) -> Dict:
-        """Convert timetable to dictionary format"""
-        result = {}
-        
-        # Initialize structure
-        for section_num in range(1, self.sections + 1):
-            section_name = chr(64 + section_num)  # A, B, C, etc.
-            result[section_name] = {}
+        return final_timetable
+
+    def tournament_selection(self, population: List[Dict], fitness_scores: List[float]) -> Dict:
+        """Tournament selection"""
+        tournament_size = 3
+        tournament_indices = random.sample(range(len(population)), min(tournament_size, len(population)))
+        best_index = max(tournament_indices, key=lambda i: fitness_scores[i])
+        return population[best_index]
+
+    def save_to_supabase(self, timetable: Dict, section: str, department: str):
+        """Save generated timetable to Supabase"""
+        try:
+            # Clear existing timetable for this section
+            self.supabase.table('timetables').delete().eq('section', section).eq('department', department).execute()
             
-            days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-            time_strings = [
-                '9:00-9:50', '9:50-10:40', 'BREAK', '11:00-11:50', 
-                '11:50-12:40', 'LUNCH', '1:30-2:20', '2:20-3:10', '3:10-4:00'
-            ]
+            for day in timetable:
+                for slot_id in timetable[day]:
+                    entry = timetable[day][slot_id]
+                    if entry:
+                        data = {
+                            'faculty_name': entry['faculty_name'],
+                            'subject_code': entry['subject_code'],
+                            'subject_name': entry['subject_name'],
+                            'day': day,
+                            'time_slot': slot_id,
+                            'section': section,
+                            'room': entry['room'],
+                            'department': department
+                        }
+                        
+                        self.supabase.table('timetables').insert(data).execute()
             
-            for day_idx, day in enumerate(days):
-                result[section_name][day] = {}
-                for period_idx, time_str in enumerate(time_strings):
-                    result[section_name][day][time_str] = None
-        
-        # Fill in the scheduled classes
-        for gene in timetable.genes:
-            section_name = gene.assignment.section
-            day_name = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][gene.time_slot.day]
-            time_str = gene.time_slot.time_str
+            print(f"Timetable saved for {section}", file=sys.stderr)
             
-            result[section_name][day_name][time_str] = {
-                'subject': gene.assignment.subject.name,
-                'faculty': gene.assignment.faculty.initials,
-                'type': gene.assignment.subject.type
-            }
+        except Exception as e:
+            print(f"Error saving timetable: {e}", file=sys.stderr)
+
+    def validate_timetable(self, timetable: Dict, section_data: Dict) -> bool:
+        """Validate final timetable meets all requirements"""
+        section_assignments = self.load_section_assignments(section_data)
+        if not section_assignments:
+            return False
         
-        return result
+        # Get department from current context
+        department = getattr(self, '_current_department', None)
+        subject_hours = self.get_subject_hours_from_db(department, list(section_assignments.keys()))
+        weekly_count = {}
+        
+        # Count actual weekly hours
+        for day in timetable:
+            for slot_id in timetable[day]:
+                entry = timetable[day][slot_id]
+                if entry and entry.get('subject_code'):
+                    subject = entry['subject_code']
+                    weekly_count[subject] = weekly_count.get(subject, 0) + 1
+        
+        # Validate weekly hours exactly match database requirements
+        for subject, expected_info in subject_hours.items():
+            expected_hours = int(expected_info.get('weekly_hours', 3))
+            actual_hours = weekly_count.get(subject, 0)
+            if actual_hours != expected_hours:
+                print(f"Validation failed: {subject} has {actual_hours} hours, expected {expected_hours}", file=sys.stderr)
+                return False
+        
+        # Check lab continuity
+        for day in timetable:
+            for slot_group in self.continuous_slots:
+                slots_in_group = [timetable[day].get(slot) for slot in slot_group]
+                if all(slot and slot.get('type') == 'lab' for slot in slots_in_group):
+                    if slots_in_group[0]['subject_code'] != slots_in_group[1]['subject_code']:
+                        print(f"Warning: Lab continuity broken on {day}", file=sys.stderr)
+                        return False
+        
+        return True
 
 def main():
-    """Main function to run genetic algorithm"""
-    if len(sys.argv) < 2:
-        print("Usage: python genetic_timetable.py <input_json>")
-        print("Example: python genetic_timetable.py input.json")
-        return
-    
     try:
-        # Read input data
-        input_file = sys.argv[1]
-        print(f"Reading input from: {input_file}")
+        input_data = json.loads(sys.stdin.read())
         
-        with open(input_file, 'r') as f:
-            data = json.load(f)
+        ga = SupabaseTimetableGA()
+        results = {}
         
-        print(f"Input data loaded: {len(data.get('assignments', []))} assignments, {data.get('sections', 0)} sections")
-        
-        # Parse assignments
-        assignments = []
-        for i, assignment_data in enumerate(data['assignments']):
-            try:
-                subject = Subject(
-                    assignment_data['subject']['name'],
-                    assignment_data['subject']['credits'],
-                    assignment_data['subject']['hours'],
-                    assignment_data['subject']['type']
-                )
-                faculty = Faculty(
-                    assignment_data['faculty']['name'],
-                    assignment_data['faculty']['initials'],
-                    assignment_data['faculty']['type']
-                )
-                assignments.append(Assignment(subject, faculty, assignment_data['section']))
-            except KeyError as e:
-                print(f"Error parsing assignment {i}: Missing key {e}")
-                continue
-        
-        sections = data.get('sections', 1)
-        
-        if not assignments:
-            print("No valid assignments found in input data")
-            return
-        
-        print(f"Parsed {len(assignments)} valid assignments")
-        
-        # Generate timetable
-        generator = GeneticTimetableGenerator(assignments, sections)
-        best_timetable = generator.generate()
-        
-        # Convert to output format
-        result = generator.timetable_to_dict(best_timetable)
-        result['fitness'] = best_timetable.fitness
-        result['metadata'] = {
-            'total_assignments': len(assignments),
-            'sections': sections,
-            'generation_time': str(datetime.now()),
-            'algorithm': 'genetic_algorithm_v2'
-        }
+        for section_data in input_data.get('sections', []):
+            section_name = section_data.get('name', 'A')
+            assignments = section_data.get('subjects', {})
+            
+            # Convert assignments to the format expected by the GA
+            section_assignments = {subject: info['faculty'] if isinstance(info, dict) else info for subject, info in assignments.items()}
+            
+            print(f"Processing section {section_name} with {len(section_assignments)} subjects", file=sys.stderr)
+            
+            department = input_data.get('department', 'ISE')
+            
+            # Generate timetable with validation
+            max_attempts = 3
+            timetable = {}  # ensure timetable is always defined
+            for attempt in range(max_attempts):
+                timetable = ga.evolve_section(department, section_name, {'subjects': section_assignments})
+                
+                if ga.validate_timetable(timetable, {'subjects': section_assignments}):
+                    print(f"Valid timetable generated for {section_name} on attempt {attempt + 1}", file=sys.stderr)
+                    break
+                elif attempt == max_attempts - 1:
+                    print(f"Warning: Could not generate fully valid timetable for {section_name}", file=sys.stderr)
+            
+            # Save to Supabase only if we have a timetable
+            if timetable:
+                ga.save_to_supabase(timetable, section_name, department)
+            else:
+                print(f"No timetable to save for {section_name}", file=sys.stderr)
+            
+            results[section_name] = timetable
         
         # Output result
-        print("\n=== TIMETABLE GENERATION COMPLETE ===")
-        print(json.dumps(result, indent=2))
+        print(json.dumps(results))
         
-    except FileNotFoundError:
-        print(f"Error: Input file '{sys.argv[1]}' not found")
-        sys.exit(1)
-    except json.JSONDecodeError as e:
-        print(f"Error: Invalid JSON in input file - {e}")
-        sys.exit(1)
     except Exception as e:
-        print(f"Unexpected error: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        print(json.dumps({"error": str(e)}), file=sys.stderr)
         sys.exit(1)
-
-# Add missing import
-from datetime import datetime
 
 if __name__ == "__main__":
     main()

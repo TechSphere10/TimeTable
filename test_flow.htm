@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Timetable Flow</title>
+</head>
+<body>
+    <h1>Test Timetable Generation Flow</h1>
+    <button onclick="testFlow()">Test Flow</button>
+    <div id="result"></div>
+
+    <script>
+        function testFlow() {
+            // Simulate data from timetable-new.htm
+            const testData = {
+                department: 'ISE',
+                semester: '5',
+                year: '3',
+                academicYear: '2024-25',
+                sections: [
+                    {
+                        name: 'A',
+                        assignments: [
+                            {
+                                subject: 'TOC',
+                                faculty: 'Dr. Smith',
+                                facultyInitials: 'DS',
+                                type: 'theory',
+                                weekly_hours: 3,
+                                credits: 3
+                            },
+                            {
+                                subject: 'CNS',
+                                faculty: 'Prof. Johnson',
+                                facultyInitials: 'PJ',
+                                type: 'theory',
+                                weekly_hours: 4,
+                                credits: 4
+                            },
+                            {
+                                subject: 'ML Lab',
+                                faculty: 'Dr. Brown',
+                                facultyInitials: 'DB',
+                                type: 'lab',
+                                weekly_hours: 2,
+                                credits: 1
+                            }
+                        ]
+                    }
+                ]
+            };
+
+            // Store in localStorage
+            localStorage.setItem('timetableData', JSON.stringify(testData));
+            
+            // Open enhanced.htm
+            window.open('enhanced.htm', '_blank');
+            
+            document.getElementById('result').innerHTML = 'Test data stored and enhanced.htm opened!';
+        }
+    </script>
+</body>
+</html>

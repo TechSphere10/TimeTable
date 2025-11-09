@@ -22,82 +22,64 @@ body {
   color: var(--primary);
   height: 100vh;
   overflow: hidden;
-  backdrop-filter: blur(10px);
 }
-
-* {
-  transition: all 0.3s ease;
-  scroll-behavior: smooth;
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; 
+  padding: 5px 20px;
+  background: linear-gradient(135deg, #004085 0%, #003366 50%, #004085 100%);
+  border-bottom: 2px solid #002244;
+  flex-wrap: wrap;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 3px 15px rgba(0, 64, 133, 0.4);
 }
-
-input:focus, select:focus {
-  transform: scale(1.02);
-  box-shadow: 0 0 10px rgba(0, 64, 133, 0.3);
-  border-color: var(--info);
-}
-
-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.faculty-card, .db-section {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-tbody tr {
-  transition: background-color 0.3s ease, transform 0.2s ease;
-}
-
-tbody tr:hover {
-  transform: translateX(5px);
-  background-color: rgba(52, 152, 219, 0.1) !important;
-}
-header {
-  background: var(--primary);
-  color: white;
-  padding: 10px;
+.logo-left, .logo-right {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
   text-align: center;
-  font-size: 22px;
-  font-weight: bold;
-  flex-shrink: 0;
 }
+.logo-left img, .logo-right img {
+  width: 70px;
+  height: 70px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.3);
+}
+.header-text {
+  text-align: center;
+  flex: 1;
+  min-width: 280px;
+}
+.header-text h1 {
+  margin: 2px 0;
+  font-weight: bold;
+  font-size: 16px;
+  line-height: 1.2;
+}
+.header-text h1:nth-child(2) {
+  font-size: 20px;
+  margin: 3px 0;
+}
+.green { color: white; }
+.orange { color: white; }
+
 main {
   display: flex;
-  height: calc(100vh - 60px);
+  height: calc(100vh - 84px);
   overflow: hidden;
 }
 aside {
   width: 280px;
   background: #e9ecef;
-  padding: 15px;
+  padding: 25px 15px 15px 15px;
   overflow-y: auto;
   flex-shrink: 0;
-  scrollbar-width: thin;
-  scrollbar-color: var(--primary) transparent;
-}
-
-aside::-webkit-scrollbar {
-  width: 6px;
-}
-
-aside::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-aside::-webkit-scrollbar-thumb {
-  background: var(--primary);
-  border-radius: 3px;
-}
-
-aside::-webkit-scrollbar-thumb:hover {
-  background: var(--info);
-}
-aside h3 {
-  margin-top: 0;
-  color: var(--primary);
-  font-size: 18px;
-  margin-bottom: 10px;
+  position: relative;
 }
 aside label {
   font-weight: bold;
@@ -108,12 +90,14 @@ aside label {
 }
 aside select, aside input {
   width: 100%;
+  height: 40px;
   padding: 8px;
   font-size: 14px;
-  border-radius: 6px;
+  border-radius: 20px;
   border: 1px solid var(--primary);
   margin-bottom: 8px;
   color: var(--primary);
+  box-sizing: border-box;
 }
 aside button {
   width: 100%;
@@ -126,15 +110,9 @@ aside button {
   color: white;
 }
 #addBtn { background: var(--info); }
-#addBtn:hover { background: #138496; }
-#saveBtn { background: var(--primary); }
-#saveBtn:hover { background: #0056b3; }
+#saveBtn { background: var(--success); }
 #viewDbBtn { background: var(--medium-blue); }
-#viewDbBtn:hover { background: var(--primary); }
-#exportBtn { background: var(--success); }
-#exportBtn:hover { background: #218838; }
 #clearBtn { background: var(--danger); }
-#clearBtn:hover { background: #c82333; }
 
 .stats-box {
   background: white;
@@ -159,26 +137,16 @@ section {
   padding: 15px;
   overflow-y: auto;
   height: 100%;
-  scrollbar-width: thin;
-  scrollbar-color: var(--primary) transparent;
+  display: flex;
+  flex-direction: column;
 }
-
-section::-webkit-scrollbar {
-  width: 8px;
-}
-
-section::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
-}
-
-section::-webkit-scrollbar-thumb {
-  background: var(--primary);
-  border-radius: 4px;
-}
-
-section::-webkit-scrollbar-thumb:hover {
-  background: var(--info);
+.table-container {
+  flex: 1;
+  overflow-y: auto;
+  max-height: calc(100vh - 300px);
+  border: 1px solid rgba(0,64,133,0.2);
+  border-radius: 8px;
+  background: white;
 }
 section h2 {
   font-size: 20px;
@@ -186,11 +154,17 @@ section h2 {
   margin-bottom: 10px;
 }
 
-/* Subjects Table */
 #subjectsTable {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0 6px;
+  margin: 0;
+}
+#subjectsTable thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: white;
 }
 #subjectsTable thead tr {
   background: var(--light-grey);
@@ -211,6 +185,8 @@ section h2 {
   padding: 8px 12px;
   border-radius: 6px;
   font-size: 14px;
+  border: none;
+  cursor: pointer;
 }
 .editBtn { background: var(--info); color: white; }
 .delBtn { background: var(--danger); color: white; }
@@ -230,7 +206,6 @@ section h2 {
   font-size: 14px;
 }
 
-/* Database Popup */
 #dbOverlay {
   display: none;
   position: fixed;
@@ -270,85 +245,14 @@ section h2 {
   cursor: pointer;
   margin-left: 10px;
 }
-#dbContent {
-  margin-top: 15px;
-}
-.year-folder {
-  margin-bottom: 20px;
-  border: 2px solid var(--primary);
-  border-radius: 8px;
-  background: white;
-}
-.folder-header {
-  background: var(--primary);
-  color: white;
-  padding: 12px;
-  cursor: pointer;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.folder-header:hover {
-  background: #0056b3;
-}
-.folder-content {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  padding: 15px;
-}
-.db-section {
-  flex: 1 1 180px;
-  max-width: 200px;
-  background: linear-gradient(135deg,#e0f0ff,#ffffff);
-  padding: 8px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,64,133,0.2);
-  font-size: 12px;
-  max-height: 250px;
-  overflow-y: auto;
-  border: 1px solid var(--primary);
-}
 
-.db-section h3 {
-  font-size: 12px;
-  margin: 0 0 4px 0;
-  color: white;
-  background: var(--primary);
-  padding: 4px;
-  border-radius: 4px 4px 0 0;
-  text-align: center;
-}
-.db-section table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 5px;
-}
-.db-section table th,
-.db-section table td {
-  border: 1px solid #ccc;
-  padding: 3px 4px;
-  font-size: 11px;
-  color: var(--primary);
+#dbContent {
+  max-width: 1200px;
+  margin: 0;
+  padding: 20px;
   text-align: left;
 }
-.db-actions {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 6px;
-}
-.db-actions button {
-  padding: 3px 6px;
-  font-size: 11px;
-  border-radius: 4px;
-  border: none;
-  cursor: pointer;
-}
-.useBtn { background: var(--primary); color: white; }
-.delBtn { background: var(--danger); color: white; }
 
-/* Toast */
 #toast {
   position: fixed;
   bottom: 20px; right: 20px;
@@ -359,29 +263,38 @@ section h2 {
   display: none;
   z-index: 2000;
 }
-
-.hidden { display: none !important; }
 </style>
 </head>
 <body>
-<header>
-  <div style="display: flex; align-items: center; justify-content: space-between;">
-    <a href="page.htm" style="color: white; text-decoration: none; padding: 8px 16px; background: rgba(255,255,255,0.2); border-radius: 6px; font-size: 14px;">← Back</a>
-    <span id="headerTitle">📘 Subject Database</span>
-    <div style="width: 80px;"></div>
+  <div class="header">
+    <div class="logo-left">
+      <img src="left-logo.png" alt="MET Logo">
+    </div>
+    <div class="header-text">
+      <h1 class="green">🎓 Maharaja Education Trust (R), Mysuru</h1>
+      <h1 class="orange">🏛️ Maharaja Institute of Technology, Mysore</h1>
+      <h1 class="green">An Autonomous Institution Affiliated to VTU, Belagavi</h1>
+      <h1 class="orange">✅ Approved by AICTE, New Delhi | Recognized by Government of Karnataka</h1>
+    </div>
+    <div class="logo-right">
+      <img src="right-logo.png" alt="Circle Logo">
+    </div>
   </div>
-</header>
+
 <main>
   <aside>
-    <h3>Controls</h3>
+    <button id="backBtn" style="position: absolute; top: 10px; left: 10px; background: linear-gradient(135deg, var(--primary) 0%, #0056b3 100%); color: white; border: none; padding: 10px 16px; font-size: 14px; border-radius: 25px; z-index: 10; width: auto; box-shadow: 0 4px 12px rgba(0,64,133,0.3); cursor: pointer; transition: all 0.3s ease;">← Back to Home</button>
+    
     <label>Academic Year:</label>
-    <input type="text" id="academicYearInput" placeholder="e.g. 2024-25">
+    <input type="text" id="academicYearInput" placeholder="EG:2024-25">
 
     <label>Year:</label>
     <select id="yearSelect">
       <option value="">--Select--</option>
-      <option>1</option><option>2</option>
-      <option>3</option><option>4</option>
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
     </select>
 
     <label>Semester:</label>
@@ -395,9 +308,6 @@ section h2 {
     <label>Credits:</label>
     <input type="number" id="creditsInput" min="1" max="6" value="1" placeholder="Credits">
 
-    <label>Hours per Week:</label>
-    <input type="number" id="hoursInput" min="1" max="10" value="3" placeholder="Hours per week">
-
     <label>Type:</label>
     <select id="typeInput">
       <option value="theory">Theory</option>
@@ -406,12 +316,13 @@ section h2 {
       <option value="free">Free</option>
     </select>
 
+    <label>Weekly Hours:</label>
+    <input type="number" id="weeklyHoursInput" min="1" max="10" value="3" placeholder="Hours per week">
+
     <button id="addBtn">Add Subject</button>
     <button id="saveBtn">💾 Save Database</button>
     <button id="viewDbBtn">📂 View Database</button>
-    <button id="exportBtn">📤 Export Data</button>
     <button id="clearBtn">🗑️ Clear All</button>
-
 
     <div class="stats-box">
       <h4>Statistics</h4>
@@ -440,23 +351,24 @@ section h2 {
       <span id="selectedCount">0 selected</span>
     </div>
 
-    <table id="subjectsTable">
-      <thead>
-        <tr>
-          <th><input type="checkbox" id="masterCheckbox"></th>
-          <th>Subject</th>
-          <th>Credits</th>
-          <th>Hours/Week</th>
-          <th>Type</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div class="table-container">
+      <table id="subjectsTable">
+        <thead>
+          <tr>
+            <th><input type="checkbox" id="masterCheckbox"></th>
+            <th>Subject</th>
+            <th>Credits</th>
+            <th>Type</th>
+            <th>Weekly Hours</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
   </section>
 </main>
 
-<!-- Database Popup -->
 <div id="dbOverlay">
   <div id="dbBox">
     <button id="dbClose">Close</button>
@@ -469,19 +381,17 @@ section h2 {
 <div id="toast"></div>
 
 <script>
-// Supabase configuration
+// Initialize Supabase client
 const SUPABASE_URL = 'https://bkmzyhroignpjebfpqug.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrbXp5aHJvaWducGplYmZwcXVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0MjA1NDUsImV4cCI6MjA3Mjk5NjU0NX0.ICE2eYzFZvz0dtNpAa5YlJTZD-idc2J76wn1ZeHwwck';
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Get department from URL or localStorage
 const urlParams = new URLSearchParams(window.location.search);
 const currentDepartment = urlParams.get('dept') || localStorage.getItem('currentDepartment') || 'ISE';
 const storageKey = `subjectsData_${currentDepartment}`;
 
-let subjectsData = {};
+let subjectsData = JSON.parse(localStorage.getItem(storageKey)||'{}');
 let currentAcademicYear = '', currentYear = '', currentSemester = '', currentSubjects = [];
-let filteredSubjects = [];
 let selectedSubjects = new Set();
 
 // DOM elements
@@ -492,21 +402,49 @@ const subjectInput = document.getElementById('subjectInput');
 const addBtn = document.getElementById('addBtn');
 const saveBtn = document.getElementById('saveBtn');
 const viewDbBtn = document.getElementById('viewDbBtn');
-const exportBtn = document.getElementById('exportBtn');
 const clearBtn = document.getElementById('clearBtn');
 const selectAllBtn = document.getElementById('selectAllBtn');
 const clearSelectionBtn = document.getElementById('clearSelectionBtn');
 const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
 const masterCheckbox = document.getElementById('masterCheckbox');
-const viewTimetablesBtn = document.getElementById('viewTimetablesBtn');
 const subjectsTable = document.querySelector('#subjectsTable tbody');
 const dbOverlay = document.getElementById('dbOverlay');
 const dbClose = document.getElementById('dbClose');
 const dbContent = document.getElementById('dbContent');
 const toast = document.getElementById('toast');
+const backBtn = document.getElementById('backBtn');
 
-// Display current department
-document.getElementById('headerTitle').textContent = `📘 ${currentDepartment} Subject Database - MIT Mysore`;
+// Enter key navigation
+academicYearInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); yearSelect.focus(); }
+});
+
+yearSelect.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); semesterSelect.focus(); }
+});
+
+semesterSelect.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); subjectInput.focus(); }
+});
+
+subjectInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); document.getElementById('creditsInput').focus(); }
+});
+
+document.getElementById('creditsInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); document.getElementById('typeInput').focus(); }
+});
+
+document.getElementById('typeInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); document.getElementById('weeklyHoursInput').focus(); }
+});
+
+document.getElementById('weeklyHoursInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); addBtn.click(); }
+});
+
+// Back button
+backBtn.onclick = () => window.location.href = `page.htm?dept=${encodeURIComponent(currentDepartment)}`;
 
 // Update statistics
 function updateStats(){
@@ -530,54 +468,68 @@ function updateStats(){
 yearSelect.onchange = () => {
   currentYear = yearSelect.value;
   const semesterOptions = { '1':['1','2'], '2':['3','4'], '3':['5','6'], '4':['7','8'] };
-  semesterSelect.innerHTML = '<option value="">--Select--</option>';
+  
+  semesterSelect.innerHTML = '<option value="">--Select Semester--</option>';
+  
   if(semesterOptions[currentYear]){
     semesterOptions[currentYear].forEach(sem=>{
       const option = document.createElement('option');
       option.value = sem;
-      option.textContent = sem;
+      option.textContent = `Semester ${sem}`;
       semesterSelect.appendChild(option);
     });
   }
+  
   currentSemester = '';
   currentSubjects = [];
   renderTable();
   updateStats();
+  
+  if (currentYear) {
+    setTimeout(() => semesterSelect.focus(), 100);
+  }
 };
 
 // Semester selection handler
 semesterSelect.onchange = () => {
   currentSemester = semesterSelect.value;
   currentAcademicYear = academicYearInput.value.trim();
+  
   if(currentAcademicYear && currentYear && currentSemester &&
      subjectsData[currentAcademicYear] &&
      subjectsData[currentAcademicYear][currentYear] &&
      subjectsData[currentAcademicYear][currentYear][currentSemester]){
     currentSubjects = subjectsData[currentAcademicYear][currentYear][currentSemester];
-  } else currentSubjects = [];
+  } else {
+    currentSubjects = [];
+  }
+  
   renderTable();
   updateStats();
+  
+  if (currentSemester) {
+    setTimeout(() => subjectInput.focus(), 100);
+  }
 };
 
 // Render subjects table
 function renderTable(){
   subjectsTable.innerHTML = '';
   selectedSubjects.clear();
-  filteredSubjects = currentSubjects;
   
-  filteredSubjects.forEach((sub,i)=>{
+  currentSubjects.forEach((sub,i)=>{
     const tr = document.createElement('tr');
     const name = typeof sub === 'object' ? escapeHtml(sub.name) : escapeHtml(sub);
     const credits = typeof sub === 'object' ? (sub.credits || 1) : 1;
-    const hours = typeof sub === 'object' ? (sub.hours || 3) : 3;
     const type = typeof sub === 'object' ? (sub.type || 'theory') : 'theory';
+    const weeklyHours = typeof sub === 'object' ? (sub.weekly_hours || 3) : 3;
     
     tr.innerHTML = `
       <td><input type="checkbox" class="subject-checkbox" data-i="${i}"></td>
       <td>${name}</td>
       <td>${credits}</td>
-      <td>${hours}</td>
-      <td style="width:80px"><span style="background:var(--info);color:white;padding:2px 6px;border-radius:4px;font-size:11px;display:inline-block;width:60px;text-align:center">${type}</span></td>
+      <td><span style="background:var(--info);color:white;padding:2px 6px;border-radius:4px;font-size:11px;">${type}</span></td>
+      <td>${weeklyHours}h</td>
       <td class="actions">
         <button class="editBtn" data-i="${i}">Edit</button>
         <button class="delBtn" data-i="${i}">Delete</button>
@@ -589,38 +541,37 @@ function renderTable(){
   updateSelectionCount();
 }
 
-// Attach event listeners to table rows
+// Attach event listeners
 function attachRowEvents(){
   document.querySelectorAll('.editBtn').forEach(btn=>{
     btn.onclick=()=>{
       const i=btn.dataset.i;
-      const originalIndex = currentSubjects.indexOf(filteredSubjects[i]);
-      const subject = filteredSubjects[i];
+      const subject = currentSubjects[i];
       const currentName = subject.name || subject;
       const currentCredits = subject.credits || 1;
-      const currentHours = subject.hours || 3;
       const currentType = subject.type || 'theory';
+      const currentWeeklyHours = subject.weekly_hours || 3;
       
       const editForm = document.createElement('div');
-      editForm.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:20px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.3);z-index:1000;color:var(--primary);transition:all 0.3s ease';
+      editForm.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:20px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.3);z-index:1000;color:var(--primary)';
       editForm.innerHTML = `
         <h3 style="margin:0 0 15px;color:var(--primary)">Edit Subject</h3>
         <label style="display:block;margin:8px 0 4px;font-weight:bold">Subject Name:</label>
-        <input id="editName" value="${escapeHtml(currentName)}" style="width:100%;padding:8px;border:1px solid var(--primary);border-radius:4px;margin-bottom:10px;transition:all 0.3s ease">
+        <input id="editName" value="${escapeHtml(currentName)}" style="width:100%;padding:8px;border:1px solid var(--primary);border-radius:4px;margin-bottom:10px">
         <label style="display:block;margin:8px 0 4px;font-weight:bold">Credits:</label>
-        <input id="editCredits" type="number" min="1" max="6" value="${currentCredits}" style="width:100%;padding:8px;border:1px solid var(--primary);border-radius:4px;margin-bottom:10px;transition:all 0.3s ease">
-        <label style="display:block;margin:8px 0 4px;font-weight:bold">Hours per Week:</label>
-        <input id="editHours" type="number" min="1" max="10" value="${currentHours}" style="width:100%;padding:8px;border:1px solid var(--primary);border-radius:4px;margin-bottom:10px;transition:all 0.3s ease">
+        <input id="editCredits" type="number" min="1" max="6" value="${currentCredits}" style="width:100%;padding:8px;border:1px solid var(--primary);border-radius:4px;margin-bottom:10px">
         <label style="display:block;margin:8px 0 4px;font-weight:bold">Type:</label>
-        <select id="editType" style="width:100%;padding:8px;border:1px solid var(--primary);border-radius:4px;margin-bottom:15px;transition:all 0.3s ease">
+        <select id="editType" style="width:100%;padding:8px;border:1px solid var(--primary);border-radius:4px;margin-bottom:10px">
           <option value="theory" ${currentType==='theory'?'selected':''}>Theory</option>
           <option value="lab" ${currentType==='lab'?'selected':''}>Lab (2 consecutive hours)</option>
           <option value="mcq" ${currentType==='mcq'?'selected':''}>MCQ</option>
           <option value="free" ${currentType==='free'?'selected':''}>Free</option>
         </select>
+        <label style="display:block;margin:8px 0 4px;font-weight:bold">Weekly Hours:</label>
+        <input id="editWeeklyHours" type="number" min="1" max="10" value="${currentWeeklyHours}" style="width:100%;padding:8px;border:1px solid var(--primary);border-radius:4px;margin-bottom:15px">
         <div style="display:flex;gap:10px;justify-content:flex-end">
-          <button id="cancelEdit" style="padding:8px 16px;background:var(--danger);color:white;border:none;border-radius:4px;cursor:pointer;transition:all 0.3s ease">Cancel</button>
-          <button id="saveEdit" style="padding:8px 16px;background:var(--primary);color:white;border:none;border-radius:4px;cursor:pointer;transition:all 0.3s ease">Save</button>
+          <button id="cancelEdit" style="padding:8px 16px;background:var(--danger);color:white;border:none;border-radius:4px;cursor:pointer">Cancel</button>
+          <button id="saveEdit" style="padding:8px 16px;background:var(--primary);color:white;border:none;border-radius:4px;cursor:pointer">Save</button>
         </div>
       `;
       
@@ -630,50 +581,35 @@ function attachRowEvents(){
       document.getElementById('saveEdit').onclick = () => {
         const newName = document.getElementById('editName').value.trim();
         const newCredits = parseInt(document.getElementById('editCredits').value) || 1;
-        const newHours = parseInt(document.getElementById('editHours').value) || 3;
         const newType = document.getElementById('editType').value;
+        const newWeeklyHours = parseInt(document.getElementById('editWeeklyHours').value) || 3;
         
         if(newName){
-          if(typeof currentSubjects[originalIndex] === 'object'){
-            currentSubjects[originalIndex].name = newName;
-            currentSubjects[originalIndex].credits = newCredits;
-            currentSubjects[originalIndex].hours = newHours;
-            currentSubjects[originalIndex].type = newType;
-          } else {
-            currentSubjects[originalIndex] = {name: newName, credits: newCredits, hours: newHours, type: newType};
-          }
+          currentSubjects[i] = {name: newName, credits: newCredits, type: newType, weekly_hours: newWeeklyHours};
           renderTable();
-          showToast("Subject updated","#28a745");
+          saveToSupabase().then(() => {
+            showToast("Subject updated successfully","#28a745");
+          }).catch(error => {
+            showToast("Error updating subject: " + error.message, "#dc3545");
+          });
         }
         document.body.removeChild(editForm);
       };
-      
-      // Add keyboard navigation
-      const inputs = editForm.querySelectorAll('input, select');
-      inputs.forEach((input, index) => {
-        input.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            if (index < inputs.length - 1) {
-              inputs[index + 1].focus();
-            } else {
-              document.getElementById('saveEdit').click();
-            }
-          }
-        });
-      });
     };
   });
   
   document.querySelectorAll('.delBtn').forEach(btn=>{
     btn.onclick=()=>{
       const i=btn.dataset.i;
-      const originalIndex = currentSubjects.indexOf(filteredSubjects[i]);
-      const subjectName = filteredSubjects[i].name || filteredSubjects[i];
+      const subjectName = currentSubjects[i].name || currentSubjects[i];
       if(confirm(`Delete "${subjectName}" permanently?`)){
-        currentSubjects.splice(originalIndex,1);
+        currentSubjects.splice(i,1);
         renderTable();
-        showToast("Subject deleted","#dc3545");
+        saveToSupabase().then(() => {
+          showToast("Subject deleted successfully","#dc3545");
+        }).catch(error => {
+          showToast("Error deleting subject: " + error.message, "#dc3545");
+        });
       }
     };
   });
@@ -714,13 +650,14 @@ deleteSelectedBtn.onclick = () => {
     return;
   }
   if(confirm(`Delete ${selectedSubjects.size} selected subjects?`)){
-    const indicesToDelete = Array.from(selectedSubjects).map(i => 
-      currentSubjects.indexOf(filteredSubjects[i])
-    ).sort((a,b) => b-a);
-    
+    const indicesToDelete = Array.from(selectedSubjects).map(i => parseInt(i)).sort((a,b) => b-a);
     indicesToDelete.forEach(index => currentSubjects.splice(index, 1));
     renderTable();
-    showToast(`${selectedSubjects.size} subjects deleted`,"#dc3545");
+    saveToSupabase().then(() => {
+      showToast(`${selectedSubjects.size} subjects deleted successfully`,"#dc3545");
+    }).catch(error => {
+      showToast("Error deleting subjects: " + error.message, "#dc3545");
+    });
   }
 };
 
@@ -737,7 +674,7 @@ function updateSelectionCount(){
 }
 
 // Add subject
-addBtn.onclick=()=>{
+addBtn.onclick = async () => {
   currentAcademicYear = academicYearInput.value.trim();
   if(!currentAcademicYear){ showToast("Enter Academic Year","#dc3545"); return; }
   if(!currentYear || !currentSemester){ showToast("Select Year & Semester","#dc3545"); return; }
@@ -745,28 +682,160 @@ addBtn.onclick=()=>{
   
   const subjectName = subjectInput.value.trim();
   const credits = parseInt(document.getElementById('creditsInput').value) || 1;
-  const hours = parseInt(document.getElementById('hoursInput').value) || 3;
   const type = document.getElementById('typeInput').value;
+  const weeklyHours = parseInt(document.getElementById('weeklyHoursInput').value) || 3;
   
+  // Check for duplicates
   const exists = currentSubjects.some(sub => {
     const name = sub.name || sub;
     return name.toLowerCase() === subjectName.toLowerCase();
   });
   
   if(exists){
-    showToast("Subject already exists","#dc3545");
+    showToast("Subject already exists in this semester","#dc3545");
     return;
   }
   
-  currentSubjects.push({name:subjectName, credits:credits, hours:hours, type:type});
-  subjectInput.value='';
-  document.getElementById('creditsInput').value='1';
-  document.getElementById('hoursInput').value='3';
-  document.getElementById('typeInput').value='theory';
-  renderTable();
-  updateStats();
-  showToast("Subject added - Click Save to store permanently","#28a745");
+  try {
+    // Add directly to Supabase
+    const { error } = await supabase.from('subjects').insert([{
+      department: currentDepartment,
+      academic_year: currentAcademicYear,
+      year: parseInt(currentYear),
+      semester: parseInt(currentSemester),
+      name: subjectName,
+      credits: credits,
+      type: type,
+      weekly_hours: weeklyHours
+    }]);
+    
+    if (error) throw error;
+    
+    // Add to current list
+    currentSubjects.push({name:subjectName, credits:credits, type:type, weekly_hours:weeklyHours});
+    
+    // Update local storage
+    if(!subjectsData[currentAcademicYear]) subjectsData[currentAcademicYear]={};
+    if(!subjectsData[currentAcademicYear][currentYear]) subjectsData[currentAcademicYear][currentYear]={};
+    subjectsData[currentAcademicYear][currentYear][currentSemester]=[...currentSubjects];
+    localStorage.setItem(storageKey, JSON.stringify(subjectsData));
+    
+    // Clear form
+    subjectInput.value='';
+    document.getElementById('creditsInput').value='1';
+    document.getElementById('typeInput').value='theory';
+    document.getElementById('weeklyHoursInput').value='3';
+    
+    // Update display immediately
+    renderTable();
+    updateStats();
+    
+    showToast("Subject added successfully","#28a745");
+    subjectInput.focus();
+    
+  } catch (error) {
+    console.error('Error adding subject:', error);
+    showToast("Error adding subject: " + error.message, "#dc3545");
+  }
 };
+
+// Save to Supabase function
+async function saveToSupabase(){
+  currentAcademicYear = academicYearInput.value.trim();
+  if(currentAcademicYear && currentYear && currentSemester && currentSubjects.length > 0){
+    try {
+      // Clear existing subjects for this semester
+      const { error: deleteError } = await supabase
+        .from('subjects')
+        .delete()
+        .eq('department', currentDepartment)
+        .eq('academic_year', currentAcademicYear)
+        .eq('year', parseInt(currentYear))
+        .eq('semester', parseInt(currentSemester));
+      
+      if (deleteError) throw deleteError;
+      
+      // Insert new subjects
+      const subjectsToInsert = currentSubjects.map(subject => ({
+        department: currentDepartment,
+        academic_year: currentAcademicYear,
+        year: parseInt(currentYear),
+        semester: parseInt(currentSemester),
+        name: subject.name,
+        credits: subject.credits || 1,
+        type: subject.type || 'theory',
+        weekly_hours: subject.weekly_hours || 3
+      }));
+      
+      const { error: insertError } = await supabase.from('subjects').insert(subjectsToInsert);
+      if (insertError) throw insertError;
+      
+      // Update local storage
+      if(!subjectsData[currentAcademicYear]) subjectsData[currentAcademicYear]={};
+      if(!subjectsData[currentAcademicYear][currentYear]) subjectsData[currentAcademicYear][currentYear]={};
+      subjectsData[currentAcademicYear][currentYear][currentSemester]=[...currentSubjects];
+      localStorage.setItem(storageKey, JSON.stringify(subjectsData));
+      updateStats();
+    } catch (error) {
+      console.error('Error saving to Supabase:', error);
+      throw error;
+    }
+  }
+}
+
+// Load from Supabase function
+async function loadFromSupabase(){
+  try {
+    const { data, error } = await supabase
+      .from('subjects')
+      .select('*')
+      .eq('department', currentDepartment)
+      .order('academic_year', { ascending: false })
+      .order('year', { ascending: true })
+      .order('semester', { ascending: true });
+    
+    if (error) throw error;
+    
+    // Organize data by academic year, year, and semester
+    const organizedData = {};
+    if (data && data.length > 0) {
+      data.forEach(subject => {
+        const ay = subject.academic_year;
+        const y = subject.year.toString();
+        const s = subject.semester.toString();
+        
+        if (!organizedData[ay]) organizedData[ay] = {};
+        if (!organizedData[ay][y]) organizedData[ay][y] = {};
+        if (!organizedData[ay][y][s]) organizedData[ay][y][s] = [];
+        
+        organizedData[ay][y][s].push({
+          name: subject.name,
+          credits: subject.credits,
+          type: subject.type,
+          weekly_hours: subject.weekly_hours
+        });
+      });
+    }
+    
+    subjectsData = organizedData;
+    localStorage.setItem(storageKey, JSON.stringify(subjectsData));
+    updateStats();
+    
+    // Reload current semester data if available
+    if (currentAcademicYear && currentYear && currentSemester) {
+      if (subjectsData[currentAcademicYear] && 
+          subjectsData[currentAcademicYear][currentYear] && 
+          subjectsData[currentAcademicYear][currentYear][currentSemester]) {
+        currentSubjects = subjectsData[currentAcademicYear][currentYear][currentSemester];
+        renderTable();
+      }
+    }
+    
+  } catch (error) {
+    console.error('Error loading from Supabase:', error);
+    throw error;
+  }
+}
 
 // Save database
 saveBtn.onclick = async () => {
@@ -776,85 +845,24 @@ saveBtn.onclick = async () => {
   if(currentSubjects.length === 0){ showToast("No subjects to save","#dc3545"); return; }
   
   try {
-    // First delete existing subjects for this combination
-    await supabase
-      .from('subjects')
-      .delete()
-      .eq('department', currentDepartment)
-      .eq('academic_year', currentAcademicYear)
-      .eq('year', currentYear)
-      .eq('semester', currentSemester);
-    
-    // Insert new subjects
-    const subjectsToInsert = currentSubjects.map(subject => ({
-      department: currentDepartment,
-      academic_year: currentAcademicYear,
-      year: currentYear,
-      semester: currentSemester,
-      name: subject.name || subject,
-      credits: subject.credits || 1,
-      hours: subject.hours || 3,
-      type: subject.type || 'theory'
-    }));
-    
-    const { error } = await supabase
-      .from('subjects')
-      .insert(subjectsToInsert);
-    
-    if (error) {
-      throw error;
-    }
-    
-    // Update local data
-    if(!subjectsData[currentAcademicYear]) subjectsData[currentAcademicYear]={};
-    if(!subjectsData[currentAcademicYear][currentYear]) subjectsData[currentAcademicYear][currentYear]={};
-    subjectsData[currentAcademicYear][currentYear][currentSemester]=currentSubjects;
-    
-    // Also save to localStorage as backup
-    localStorage.setItem(storageKey, JSON.stringify(subjectsData));
-    
-    updateStats();
-    showToast(`Database saved to Supabase for ${currentDepartment}`,"#28a745");
+    await saveToSupabase();
+    showToast(`Database saved successfully for ${currentDepartment}`,"#28a745");
   } catch (error) {
-    console.error('Error saving to Supabase:', error);
-    // Fallback to localStorage
-    if(!subjectsData[currentAcademicYear]) subjectsData[currentAcademicYear]={};
-    if(!subjectsData[currentAcademicYear][currentYear]) subjectsData[currentAcademicYear][currentYear]={};
-    subjectsData[currentAcademicYear][currentYear][currentSemester]=currentSubjects;
-    localStorage.setItem(storageKey, JSON.stringify(subjectsData));
-    updateStats();
-    showToast(`Saved locally for ${currentDepartment} (Supabase error)`,"#ffc107");
+    showToast("Error saving to database: " + error.message, "#dc3545");
   }
-};
-
-// Export functionality
-exportBtn.onclick = () => {
-  if(Object.keys(subjectsData).length === 0){
-    showToast("No data to export","#dc3545");
-    return;
-  }
-  const dataStr = JSON.stringify(subjectsData, null, 2);
-  const dataBlob = new Blob([dataStr], {type: 'application/json'});
-  const url = URL.createObjectURL(dataBlob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `subjects_${currentDepartment}_${new Date().toISOString().split('T')[0]}.json`;
-  link.click();
-  URL.revokeObjectURL(url);
-  showToast("Data exported","#28a745");
 };
 
 // Clear all data
 clearBtn.onclick = async () => {
-  if(confirm(`⚠️ WARNING: This will permanently delete ALL subject data for ${currentDepartment} department from both Supabase and local storage. This action cannot be undone. Are you sure?`)){
+  if(confirm(`Clear all data for ${currentDepartment} permanently?`)){
     try {
-      // Delete from Supabase
-      await supabase
+      const { error } = await supabase
         .from('subjects')
         .delete()
         .eq('department', currentDepartment);
       
-      // Clear local data
+      if (error) throw error;
+      
       subjectsData = {};
       currentSubjects = [];
       localStorage.removeItem(storageKey);
@@ -862,139 +870,140 @@ clearBtn.onclick = async () => {
       updateStats();
       showToast(`All data cleared for ${currentDepartment}`,"#dc3545");
     } catch (error) {
-      console.error('Error clearing Supabase data:', error);
-      // Still clear local data
-      subjectsData = {};
-      currentSubjects = [];
-      localStorage.removeItem(storageKey);
-      renderTable();
-      updateStats();
-      showToast(`Local data cleared for ${currentDepartment}`,"#dc3545");
+      showToast("Error clearing data: " + error.message, "#dc3545");
     }
   }
 };
 
-// View Database functionality
-viewDbBtn.onclick = () => {
-  dbContent.innerHTML='';
+// View Database
+viewDbBtn.onclick = async () => {
+  dbContent.innerHTML = '<div style="text-align:center;padding:20px;">Loading data...</div>';
   
-  if(Object.keys(subjectsData).length===0){
-    dbContent.innerHTML='<p style="text-align:center;padding:20px;font-size:16px;color:#666;">No data saved yet. Add subjects and save to see them here.</p>';
-  } else {
+  try {
+    // Load fresh data from Supabase
+    await loadFromSupabase();
+    
+    dbContent.innerHTML = '';
+    
+    if(Object.keys(subjectsData).length === 0){
+      dbContent.innerHTML = `
+        <div style="text-align:center;padding:60px 20px;">
+          <div style="font-size:48px;margin-bottom:20px;opacity:0.3;">📚</div>
+          <h3 style="color:var(--primary);margin-bottom:10px;">No Subjects Database Found</h3>
+          <p style="color:#666;font-size:16px;margin-bottom:30px;">Start by adding subjects and saving them to build your database.</p>
+          <div style="background:linear-gradient(135deg,#f8fafc 0%,#e9ecef 100%);padding:20px;border-radius:12px;border:2px dashed #ddd;">
+            <p style="color:#888;font-size:14px;margin:0;">💡 Tip: Organize subjects by Academic Year → Year → Semester for easy management</p>
+          </div>
+        </div>
+      `;
+      dbOverlay.style.display = 'block';
+      return;
+    }
+  
+    // Create cards for each academic year
     for(const ay in subjectsData){
-      const yearFolder = document.createElement('div');
-      yearFolder.className = 'year-folder';
+      const yearCard = document.createElement('div');
+      yearCard.style.cssText = `
+        background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 8px 25px rgba(0,64,133,0.12);
+        border: 2px solid rgba(0,64,133,0.1);
+        transition: all 0.3s ease;
+      `;
       
-      const folderHeader = document.createElement('div');
-      folderHeader.className = 'folder-header';
-      folderHeader.innerHTML = `📂 ${ay}`;
+      yearCard.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+          <h2 style="color: var(--primary); margin: 0; font-size: 24px; font-weight: 700;">📚 Academic Year ${ay}</h2>
+          <span style="background: var(--primary); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 600;">${currentDepartment} Department</span>
+        </div>
+      `;
       
-      const folderContent = document.createElement('div');
-      folderContent.className = 'folder-content';
-      folderContent.style.display = 'flex';
-      
-      folderHeader.onclick = function(){
-        if(folderContent.style.display === 'none'){
-          folderContent.style.display = 'flex';
-          folderHeader.innerHTML = `📂 ${ay}`;
-        } else {
-          folderContent.style.display = 'none';
-          folderHeader.innerHTML = `📁 ${ay}`;
-        }
-      };
+      const yearsContainer = document.createElement('div');
+      yearsContainer.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;';
       
       for(const y in subjectsData[ay]){
         for(const s in subjectsData[ay][y]){
-          const list=subjectsData[ay][y][s];
+          const list = subjectsData[ay][y][s];
           if(list && list.length > 0){
-            const section=document.createElement('div');
-            section.className="db-section";
-            section.innerHTML=`
-              <h3>Year ${y} - Semester ${s} (${list.length} subjects)</h3>
-              <table>
-                <tr><th>Subject</th><th>Credits</th><th>Hours</th><th>Type</th></tr>
-                ${list.map(sub=>{
+            const semesterCard = document.createElement('div');
+            semesterCard.style.cssText = `
+              background: white;
+              border-radius: 12px;
+              padding: 20px;
+              border: 1px solid rgba(0,64,133,0.15);
+              box-shadow: 0 4px 12px rgba(0,64,133,0.08);
+              transition: all 0.3s ease;
+            `;
+            
+            semesterCard.innerHTML = `
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+                <h3 style="color: var(--primary); margin: 0; font-size: 18px;">Year ${y} - Semester ${s}</h3>
+                <span style="background: var(--info); color: white; padding: 4px 12px; border-radius: 15px; font-size: 12px; font-weight: 600;">${list.length} Subjects</span>
+              </div>
+              <div style="max-height: 200px; overflow-y: auto; margin-bottom: 15px;">
+                ${list.map(sub => {
                   const name = escapeHtml(sub.name || sub);
                   const credits = sub.credits || 1;
-                  const hours = sub.hours || 3;
                   const type = sub.type || 'theory';
-                  return `<tr><td>${name}</td><td>${credits}</td><td>${hours}</td><td>${type}</td></tr>`;
+                  const hours = sub.weekly_hours || 3;
+                  return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                      <div>
+                        <div style="font-weight: 600; color: var(--primary); font-size: 14px;">${name}</div>
+                        <div style="font-size: 12px; color: #666;">${credits} Credits • ${hours}h/week</div>
+                      </div>
+                      <span style="background: var(--info); color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px; text-transform: uppercase;">${type}</span>
+                    </div>
+                  `;
                 }).join('')}
-              </table>
-              <div class="db-actions">
-                <button class="useBtn" data-ay="${ay}" data-y="${y}" data-s="${s}">✅ Use</button>
-                <button class="delBtn" data-ay="${ay}" data-y="${y}" data-s="${s}">🗑️ Delete</button>
+              </div>
+              <div style="display: flex; gap: 10px;">
+                <button class="useBtn" data-ay="${ay}" data-y="${y}" data-s="${s}" style="flex: 1; background: var(--success); color: white; border: none; padding: 8px 12px; border-radius: 8px; font-size: 12px; cursor: pointer;">✅ Load</button>
+                <button class="delBtn" data-ay="${ay}" data-y="${y}" data-s="${s}" style="flex: 1; background: var(--danger); color: white; border: none; padding: 8px 12px; border-radius: 8px; font-size: 12px; cursor: pointer;">🗑️ Delete</button>
               </div>
             `;
-            folderContent.appendChild(section);
+            
+            yearsContainer.appendChild(semesterCard);
           }
         }
       }
       
-      yearFolder.appendChild(folderHeader);
-      yearFolder.appendChild(folderContent);
-      dbContent.appendChild(yearFolder);
+      yearCard.appendChild(yearsContainer);
+      dbContent.appendChild(yearCard);
     }
-    
-    // Attach event listeners to Use and Delete buttons
+  
+    // Attach event listeners
     dbContent.querySelectorAll('.useBtn').forEach(btn=>{
       btn.onclick = function(){
         const ay=btn.dataset.ay, y=btn.dataset.y, s=btn.dataset.s;
-        const subjects = subjectsData[ay][y][s] || [];
-        
-        // Check if we came from timetable generator
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('fromTimetable') === 'true') {
-          // Redirect to timetable view database
-          if(window.opener){
-            window.opener.postMessage({
-              type: 'SUBJECTS_SELECTED',
-              subjects: subjects
-            }, '*');
-            setTimeout(() => window.close(), 500);
-          } else {
-            window.location.href = `timetable-new.htm?dept=${currentDepartment}&directTimetables=true`;
-          }
-        } else {
-          // Load subjects locally in subject database
-          academicYearInput.value=ay;
-          yearSelect.value=y; yearSelect.onchange();
-          semesterSelect.value=s; semesterSelect.onchange();
-          dbOverlay.style.display='none';
-          showToast(`Loaded ${ay} Year ${y}, Sem ${s}`,"#28a745");
-        }
+        academicYearInput.value=ay;
+        yearSelect.value=y; yearSelect.onchange();
+        semesterSelect.value=s; semesterSelect.onchange();
+        dbOverlay.style.display='none';
+        showToast(`Loaded ${ay} Year ${y}, Sem ${s}`,"#28a745");
       };
     });
     
     dbContent.querySelectorAll('.delBtn').forEach(btn=>{
-      btn.onclick = async function(){
+      btn.onclick = function(){
         const ay=btn.dataset.ay, y=btn.dataset.y, s=btn.dataset.s;
         if(confirm(`Delete ${ay} Year ${y}, Sem ${s}?`)){
-          try {
-            // Delete from Supabase
-            await supabase
-              .from('subjects')
-              .delete()
-              .eq('department', currentDepartment)
-              .eq('academic_year', ay)
-              .eq('year', y)
-              .eq('semester', s);
-            
-            // Update local data
-            delete subjectsData[ay][y][s];
-            if(Object.keys(subjectsData[ay][y]).length===0) delete subjectsData[ay][y];
-            if(Object.keys(subjectsData[ay]).length===0) delete subjectsData[ay];
-            localStorage.setItem(storageKey, JSON.stringify(subjectsData));
-            btn.closest('.db-section').remove();
-            updateStats();
-            showToast(`Deleted ${ay} Year ${y}, Sem ${s}`,"#dc3545");
-          } catch (error) {
-            console.error('Error deleting from Supabase:', error);
-            showToast(`Error deleting from database`,"#dc3545");
-          }
+          delete subjectsData[ay][y][s];
+          if(Object.keys(subjectsData[ay][y]).length===0) delete subjectsData[ay][y];
+          if(Object.keys(subjectsData[ay]).length===0) delete subjectsData[ay];
+          localStorage.setItem(storageKey, JSON.stringify(subjectsData));
+          btn.closest('div').parentElement.remove();
+          updateStats();
+          showToast(`Deleted ${ay} Year ${y}, Sem ${s}`,"#dc3545");
         }
       };
     });
+    
+  } catch (error) {
+    console.error('Error loading data:', error);
+    showToast('Error loading data: ' + error.message, '#dc3545');
   }
   
   dbOverlay.style.display='block';
@@ -1004,8 +1013,6 @@ viewDbBtn.onclick = () => {
 dbClose.onclick = () => {
   dbOverlay.style.display='none';
 };
-
-
 
 // Go to timetable generator
 document.getElementById('goToTimetable').onclick = () => {
@@ -1022,88 +1029,18 @@ function showToast(msg,color){
 
 function escapeHtml(txt){
   if(!txt) return '';
-  return txt.toString().replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
+  return txt.toString().replace(/[&<>\"']/g,m=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[m]));
 }
 
 // Initialize
-loadSubjectsFromSupabase();
-setupKeyboardNavigation();
-
-// Setup keyboard navigation
-function setupKeyboardNavigation() {
-  const formInputs = [
-    academicYearInput,
-    yearSelect,
-    semesterSelect,
-    subjectInput,
-    document.getElementById('creditsInput'),
-    document.getElementById('hoursInput'),
-    document.getElementById('typeInput')
-  ];
-  
-  formInputs.forEach((input, index) => {
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        if (index < formInputs.length - 1) {
-          formInputs[index + 1].focus();
-        } else {
-          addBtn.click();
-        }
-      }
-    });
-  });
-}
-
-// Load subjects from Supabase
-async function loadSubjectsFromSupabase() {
-  try {
-    const { data, error } = await supabase
-      .from('subjects')
-      .select('*')
-      .eq('department', currentDepartment)
-      .order('academic_year', { ascending: false })
-      .order('year')
-      .order('semester');
-
-    if (error && error.code !== '42P01') {
-      console.error('Error loading subjects:', error);
-      return;
-    }
-
-    if (data) {
-      // Convert Supabase data to local format
-      subjectsData = {};
-      data.forEach(subject => {
-        const { academic_year, year, semester, name, credits, type } = subject;
-        if (!subjectsData[academic_year]) subjectsData[academic_year] = {};
-        if (!subjectsData[academic_year][year]) subjectsData[academic_year][year] = {};
-        if (!subjectsData[academic_year][year][semester]) subjectsData[academic_year][year][semester] = [];
-        
-        subjectsData[academic_year][year][semester].push({
-          name: name,
-          credits: credits || 1,
-          hours: hours || 3,
-          type: type || 'theory'
-        });
-      });
-    }
-    
-    updateStats();
-  } catch (error) {
-    console.error('Error connecting to Supabase:', error);
-    // Fallback to localStorage
-    subjectsData = JSON.parse(localStorage.getItem(storageKey)||'{}');
-    updateStats();
-  }
-}
-
-// Auto-show database if parameter is present
-if(urlParams.get('autoShowDb') === 'true') {
-  setTimeout(() => {
-    viewDbBtn.click();
-  }, 500);
-}
+loadFromSupabase().then(() => {
+  updateStats();
+}).catch(error => {
+  console.error('Initial load failed:', error);
+  updateStats();
+});
 </script>
 </body>
 </html>
