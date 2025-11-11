@@ -18,7 +18,7 @@
 body {
   margin: 0;
   font-family: 'Segoe UI', Arial, sans-serif;
-  background: linear-gradient(135deg, rgba(248,249,250,0.95) 0%, rgba(233,236,239,0.9) 100%);
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
   color: var(--primary);
   height: 100vh;
   overflow: hidden;
@@ -28,11 +28,10 @@ body {
   align-items: center;
   justify-content: space-between; 
   padding: 5px 20px;
-  background: linear-gradient(135deg, #004085 0%, #003366 50%, #004085 100%);
-  border-bottom: 2px solid #002244;
+  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+  border-bottom: 3px solid #1e40af;
   flex-wrap: wrap;
-  backdrop-filter: blur(20px);
-  box-shadow: 0 3px 15px rgba(0, 64, 133, 0.4);
+  box-shadow: 0 4px 20px rgba(30, 64, 175, 0.3);
 }
 .logo-left, .logo-right {
   width: 80px;
@@ -75,11 +74,12 @@ main {
 }
 aside {
   width: 300px;
-  background: #e9ecef;
+  background: white;
   padding: 25px 15px 15px 15px;
   overflow-y: auto;
   flex-shrink: 0;
   position: relative;
+  border-right: 1px solid #e0f2fe;
 }
 aside label {
   font-weight: bold;
@@ -91,35 +91,53 @@ aside label {
 aside select, aside input {
   width: 100%;
   height: 40px;
-  padding: 8px;
+  padding: 8px 12px;
   font-size: 14px;
-  border-radius: 20px;
-  border: 1px solid var(--primary);
+  border-radius: 8px;
+  border: 2px solid #e0f2fe;
   margin-bottom: 8px;
   color: var(--primary);
   box-sizing: border-box;
+  transition: all 0.3s ease;
+  background: #f8fafc;
+}
+aside select:focus, aside input:focus {
+  border-color: #3b82f6;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  outline: none;
 }
 aside button {
   width: 100%;
-  padding: 8px;
-  border-radius: 6px;
-  border: none;
-  font-size: 14px;
-  cursor: pointer;
-  margin-bottom: 6px;
-  color: white;
-}
-#addBtn { background: var(--info); }
-#saveBtn { background: var(--success); }
-#viewDbBtn { background: var(--medium-blue); }
-#clearBtn { background: var(--danger); }
-
-.stats-box {
-  background: white;
   padding: 10px;
   border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 8px;
+  color: white;
+  transition: all 0.3s ease;
+}
+aside button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+#addBtn { background: #3b82f6; }
+#addBtn:hover { background: #2563eb; }
+#saveBtn { background: #22c55e; }
+#saveBtn:hover { background: #16a34a; }
+#viewDbBtn { background: #3b82f6; }
+#viewDbBtn:hover { background: #2563eb; }
+#clearBtn { background: #ef4444; }
+#clearBtn:hover { background: #dc2626; }
+
+.stats-box {
+  background: #eff6ff;
+  padding: 12px;
+  border-radius: 8px;
   margin: 10px 0;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  border: 1px solid #dbeafe;
 }
 .stats-box h4 {
   margin: 0 0 10px 0;
@@ -144,9 +162,10 @@ section {
   flex: 1;
   overflow-y: auto;
   max-height: calc(100vh - 300px);
-  border: 1px solid rgba(0,64,133,0.2);
+  border: 1px solid #e0f2fe;
   border-radius: 8px;
   background: white;
+  box-shadow: 0 2px 8px rgba(30, 64, 175, 0.08);
 }
 section h2 {
   font-size: 20px;
@@ -177,8 +196,11 @@ section h2 {
 }
 #facultyTable tbody tr {
   background: white;
-  box-shadow: 0 2px 4px rgba(0,64,133,0.1);
-  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+#facultyTable tbody tr:hover {
+  background: #f0f9ff;
+  transform: translateX(2px);
 }
 .actions button {
   margin-right: 6px;
@@ -188,8 +210,10 @@ section h2 {
   border: none;
   cursor: pointer;
 }
-.editBtn { background: var(--info); color: white; }
-.delBtn { background: var(--danger); color: white; }
+.editBtn { background: #3b82f6; color: white; transition: all 0.2s ease; }
+.editBtn:hover { background: #2563eb; transform: scale(1.05); }
+.delBtn { background: #ef4444; color: white; transition: all 0.2s ease; }
+.delBtn:hover { background: #dc2626; transform: scale(1.05); }
 
 .designation-badge {
   padding: 4px 10px;

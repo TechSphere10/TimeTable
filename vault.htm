@@ -14,7 +14,7 @@
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
             min-height: 100vh;
             padding: 20px;
         }
@@ -22,10 +22,11 @@
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
+            background: white;
+            border-radius: 12px;
             padding: 30px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 20px rgba(30, 64, 175, 0.15);
+            border: 1px solid #e0f2fe;
         }
         
         .header {
@@ -34,36 +35,39 @@
         }
         
         .header h1 {
-            color: #2c3e50;
+            color: #1e40af;
             margin-bottom: 10px;
             font-size: 28px;
         }
         
         .dept-info {
-            background: #3498db;
+            background: #3b82f6;
             color: white;
             padding: 10px 20px;
-            border-radius: 25px;
+            border-radius: 8px;
             display: inline-block;
-            font-weight: bold;
+            font-weight: 600;
             margin-bottom: 20px;
         }
         
         .back-btn {
-            background: #34495e;
+            background: #3b82f6;
             color: white;
             padding: 10px 20px;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
             text-decoration: none;
             display: inline-block;
             margin-bottom: 20px;
-            transition: background 0.3s;
+            transition: all 0.3s ease;
+            font-weight: 600;
         }
         
         .back-btn:hover {
-            background: #2c3e50;
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
         }
         
         .loading {
@@ -88,16 +92,17 @@
         
         .timetable-card {
             background: white;
-            border: 2px solid #ecf0f1;
-            border-radius: 10px;
+            border: 1px solid #e0f2fe;
+            border-radius: 8px;
             padding: 20px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-            transition: transform 0.3s, box-shadow 0.3s;
+            box-shadow: 0 2px 8px rgba(30, 64, 175, 0.08);
+            transition: all 0.3s ease;
         }
         
         .timetable-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(30, 64, 175, 0.15);
+            border-color: #3b82f6;
         }
         
         .timetable-title {
@@ -149,30 +154,33 @@
         }
         
         .btn-primary {
-            background: #3498db;
+            background: #3b82f6;
             color: white;
         }
         
         .btn-primary:hover {
-            background: #2980b9;
+            background: #2563eb;
+            transform: translateY(-1px);
         }
         
         .btn-success {
-            background: #27ae60;
+            background: #22c55e;
             color: white;
         }
         
         .btn-success:hover {
-            background: #219a52;
+            background: #16a34a;
+            transform: translateY(-1px);
         }
         
         .btn-danger {
-            background: #e74c3c;
+            background: #ef4444;
             color: white;
         }
         
         .btn-danger:hover {
-            background: #c0392b;
+            background: #dc2626;
+            transform: translateY(-1px);
         }
         
         .filters {

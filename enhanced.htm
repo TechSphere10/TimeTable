@@ -11,149 +11,241 @@
         * {
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
+            box-sizing: border-box; 
         }
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f8f9fa;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             padding: 20px;
             min-height: 100vh;
         }
         
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
         .controls {
             position: fixed;
-            top: 20px;
+            top: 15px;
             right: 20px;
             display: flex;
             flex-direction: column;
             gap: 10px;
             z-index: 1000;
+            animation: slideInRight 0.6s ease;
+        }
+        
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
         
         .control-btn {
-            padding: 10px 15px;
+            padding: 12px 18px;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             cursor: pointer;
             font-weight: 600;
-            font-size: 12px;
+            font-size: 13px;
             transition: all 0.3s ease;
-            min-width: 150px;
+            min-width: 160px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
         }
         
-        .btn-back { background: #28a745; color: white; }
-        .btn-generate { background: #dc3545; color: white; }
-        .btn-swap { background: #6f42c1; color: white; }
-        .btn-export { background: #fd7e14; color: white; }
-        .btn-save { background: #17a2b8; color: white; }
+        .control-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .control-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .btn-back { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; }
+        .btn-generate { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; }
+        .btn-swap { background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%); color: white; }
+        .btn-export { background: linear-gradient(135deg, #fd7e14 0%, #e8590c 100%); color: white; }
+        .btn-save { background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); color: white; }
         
         .control-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        
+        .control-btn:active {
+            transform: translateY(-1px);
         }
         
         .container {
-            max-width: 1200px;
-            margin: 0 auto;
+            max-width: 1400px;
+            margin: 0 auto 40px;
             background: white;
-            border: 2px solid #000;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border: 3px solid #004085;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
             overflow: hidden;
+            animation: fadeIn 0.6s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .header {
             display: flex;
             align-items: center;
             padding: 20px;
-            background: linear-gradient(135deg, #004085 0%, #003366 50%, #004085 100%);
+            background: linear-gradient(135deg, #004085 0%, #0056b3 50%, #004085 100%);
             color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: headerRotate 20s linear infinite;
+        }
+        
+        @keyframes headerRotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
         
         .logo-left, .logo-right {
-            width: 80px;
-            height: 80px;
-            background: rgba(255,255,255,0.1);
-            border: 2px solid rgba(255,255,255,0.3);
-            border-radius: 8px;
+            width: 90px;
+            height: 90px;
+            background: rgba(255,255,255,0.15);
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 10px;
+            font-size: 11px;
             text-align: center;
             font-weight: bold;
+            z-index: 1;
+            backdrop-filter: blur(10px);
+            animation: logoFloat 3s ease-in-out infinite;
+        }
+        
+        @keyframes logoFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
         
         .header-text {
             flex: 1;
             text-align: center;
-            padding: 0 20px;
+            padding: 0 25px;
+            z-index: 1;
         }
         
         .header-text h1 {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: bold;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            animation: textGlow 2s ease-in-out infinite;
+        }
+        
+        @keyframes textGlow {
+            0%, 100% { text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+            50% { text-shadow: 2px 2px 8px rgba(255,255,255,0.3); }
         }
         
         .header-text p {
-            font-size: 12px;
-            margin: 2px 0;
-            opacity: 0.9;
+            font-size: 13px;
+            margin: 4px 0;
+            opacity: 0.95;
         }
         
         .class-info {
             display: flex;
-            justify-content: space-between;
-            padding: 15px;
-            background: #fff3cd;
-            font-size: 14px;
+            justify-content: space-around;
+            padding: 18px;
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            font-size: 15px;
             font-weight: bold;
-            color: #856404;
+            color: #1e3c72;
+            border-bottom: 2px solid #3b82f6;
+        }
+        
+        .class-info span {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: fadeIn 0.5s ease;
         }
         
         .timetable {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
+            margin: 20px 0; 
         }
         
         .timetable th, .timetable td {
-            border: 1px solid #000;
-            padding: 8px;
+            border: 2px solid #3b82f6;
+            padding: 12px;
             text-align: center;
-            font-size: 11px;
+            font-size: 12px;
             vertical-align: middle;
         }
         
         .timetable th {
-            background: #e9ecef;
-            color: #333;
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            color: #1e3c72;
             font-weight: bold;
+            font-size: 13px;
         }
         
         .day-header {
-            background: #f8f9fa;
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
             font-weight: bold;
             writing-mode: vertical-rl;
             text-orientation: mixed;
-            width: 60px;
+            width: 70px;
+            font-size: 14px;
+            color: #1e3c72;
         }
         
         .time-header {
-            background: #e6e6e6;
-            font-size: 9px;
-            line-height: 1.2;
-            min-width: 80px;
+            background: linear-gradient(135deg, #e6e6e6 0%, #d4d4d4 100%);
+            font-size: 10px;
+            line-height: 1.3;
+            min-width: 90px;
+            font-weight: 600;
         }
         
         .subject-cell {
             background: white;
             cursor: pointer;
-            transition: all 0.3s ease;
-            min-height: 40px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            min-height: 60px;
             position: relative;
+            padding: 8px 6px;
         }
         
         .subject-cell.editing {
@@ -172,19 +264,21 @@
         }
         
         .subject-cell:hover {
-            background: #f8f9fa;
-            border-color: #007bff;
+            background: #f0f8ff;
+            transform: scale(1.05);
+            box-shadow: inset 0 0 15px rgba(0,123,255,0.2);
+            z-index: 10;
         }
         
         .subject-cell.swap-mode {
-            border: 2px dashed #6f42c1;
-            background: #f8f4ff;
+            border: 2px dashed #a855f7;
+            background: #fdf4ff;
         }
         
         .subject-cell.selected {
-            background: #6f42c1;
+            background: #a855f7;
             color: white;
-            border: 2px solid #5a2d91;
+            border: 2px solid #9333ea;
         }
         
         .subject-cell.alternative {
@@ -210,16 +304,18 @@
         }
         
         .break-cell {
-            background: #fff3cd;
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
             font-weight: bold;
             color: #856404;
             writing-mode: vertical-rl;
             text-orientation: mixed;
+            font-size: 12px;
         }
         
         .lunch-break {
-            background: #f8d7da;
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
             color: #721c24;
+            font-size: 13px;
         }
         
         .subject-table {
@@ -237,6 +333,7 @@
             z-index: 9999;
             max-width: 300px;
             animation: slideIn 0.3s ease;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
         }
         
         .alert-info { background: #17a2b8; }
@@ -248,13 +345,55 @@
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
         }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div style="text-align: center; color: white;">
+            <div class="loading-spinner"></div>
+            <div style="margin-top: 20px; font-size: 18px; font-weight: bold;">Generating Timetable...</div>
+        </div>
+    </div>
+    
     <div class="controls">
         <button class="control-btn btn-back" onclick="goBack()">← Back</button>
         <button class="control-btn btn-generate" onclick="generateTimetable()">🧬 Generate GA</button>
         <button class="control-btn" style="background: #28a745;" onclick="testGeneration()">🧪 Test</button>
+        <div style="display: flex; gap: 5px;">
+            <button class="control-btn" style="background: #6c757d; min-width: 75px;" onclick="showPreviousSection()">◀</button>
+            <button class="control-btn" style="background: #6c757d; min-width: 75px;" onclick="showNextSection()">▶</button>
+        </div>
         <button class="control-btn" style="background: #ffc107; color: #333;" onclick="toggleEditMode()">✏️ Edit</button>
         <button class="control-btn btn-swap" onclick="toggleSwapMode()">🔄 Smart Swap</button>
         <button class="control-btn btn-export" onclick="exportPDF()">📄 Export PDF</button>
@@ -268,7 +407,29 @@
         let timetableData = null;
         let existingTimetables = [];
         let swapMode = false;
-        let selectedCells = [];
+        let selectedCell = null;
+        let currentSectionIndex = 0;
+        
+        // Global faculty schedule tracker to prevent labs at same time for all sections
+        const globalFacultySchedule = {};
+        
+        function initGlobalSchedule() {
+            Object.keys(globalFacultySchedule).forEach(key => delete globalFacultySchedule[key]);
+        }
+        
+        function markFacultyBusy(facultyName, day, slot) {
+            if (!globalFacultySchedule[facultyName]) {
+                globalFacultySchedule[facultyName] = {};
+            }
+            if (!globalFacultySchedule[facultyName][day]) {
+                globalFacultySchedule[facultyName][day] = new Set();
+            }
+            globalFacultySchedule[facultyName][day].add(slot);
+        }
+        
+        function isFacultyBusy(facultyName, day, slot) {
+            return globalFacultySchedule[facultyName]?.[day]?.has(slot) || false;
+        }
         
         // Supabase Configuration
         const SUPABASE_URL = 'https://bkmzyhroignpjebfpqug.supabase.co';
@@ -351,11 +512,14 @@
             
             sections.forEach((sectionData, index) => {
                 const sectionDiv = document.createElement('div');
-                sectionDiv.className = 'timetable-section';
+                sectionDiv.className = 'timetable-section-container';
+                sectionDiv.id = `section-container-${sectionData.name}`;
+                if (index > 0) sectionDiv.style.display = 'none'; // Hide all but the first
                 sectionDiv.innerHTML = createTimetableHTML(sectionData.name, index);
                 container.appendChild(sectionDiv);
             });
             
+            updateSectionNavButtons();
             console.log('Generated timetable structure for sections:', sections.map(s => s.name));
         }
 
@@ -547,6 +711,7 @@
             const originalText = btn.innerHTML;
             btn.innerHTML = '🔄 Generating...';
             btn.disabled = true;
+            document.getElementById('loadingOverlay').style.display = 'flex';
             
             try {
                 showAlert('🧬 Running Genetic Algorithm...', 'info');
@@ -595,421 +760,36 @@
                 
             } catch (error) {
                 console.error('Generation error:', error);
-                showAlert(`❌ Generation failed: ${error.message}`, 'danger');
+                const friendlyError = error.message.includes('Failed to fetch') 
+                    ? 'Could not connect to the Python backend. Is it running?' 
+                    : error.message;
+                showAlert(`❌ Generation failed: ${friendlyError}`, 'danger');
             } finally {
                 btn.innerHTML = originalText;
                 btn.disabled = false;
+                document.getElementById('loadingOverlay').style.display = 'none';
             }
         }
         
         async function callPythonGA(inputData) {
             try {
-                console.log('Python GA Input:', inputData);
-                
-                const result = {};
-                
-                for (const sectionData of inputData.sections) {
-                    const sectionName = sectionData.name;
-                    
-                    // Convert assignments to subjects format
-                    const subjects = {};
-                    sectionData.assignments.forEach(assignment => {
-                        subjects[assignment.subject] = {
-                            faculty: assignment.faculty,
-                            type: assignment.type,
-                            weekly_hours: assignment.weekly_hours,
-                            credits: assignment.credits
-                        };
-                    });
-                    
-                    console.log(`Processing section ${sectionName} with subjects:`, subjects);
-                    
-                    result[sectionName] = await createAdvancedTimetable(subjects, sectionName);
-                    
-                    // Save to Supabase
-                    await saveTimetableToSupabase(sectionName, result[sectionName]);
+                const response = await fetch('http://127.0.0.1:5000/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(inputData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Backend error: ${response.status} ${await response.text()}`);
                 }
-                
-                return result;
-                
+                return await response.json();
             } catch (error) {
                 console.error('Python GA call failed:', error);
                 throw error;
             }
         }
-
-        async function createAdvancedTimetable(subjects, section) {
-            const timetable = {};
-            const subjectCodes = Object.keys(subjects);
-            const department = timetableData?.department || 'ISE';
-            
-            if (subjectCodes.length === 0) return {};
-            
-            console.log(`Creating timetable for ${section} with subjects:`, subjectCodes);
-            
-            // Initialize empty timetable
-            days.forEach(day => {
-                timetable[day] = {};
-                for (let slot = 0; slot < 6; slot++) {
-                    timetable[day][slot] = null;
-                }
-            });
-            
-            // Get exact weekly hours from database
-            const subjectHours = {};
-            for (const subjectCode of subjectCodes) {
-                try {
-                    const { data, error } = await supabase
-                        .from('subjects')
-                        .select('weekly_hours, type')
-                        .eq('department', department)
-                        .eq('name', subjectCode)
-                        .single();
-                    
-                    if (data && !error) {
-                        subjectHours[subjectCode] = {
-                            weekly_hours: parseInt(data.weekly_hours) || 3,
-                            type: data.type || 'theory'
-                        };
-                        console.log(`${subjectCode}: ${data.weekly_hours} hours/week, type: ${data.type}`);
-                    } else {
-                        subjectHours[subjectCode] = {
-                            weekly_hours: 3,
-                            type: subjectCode.includes('Lab') || subjectCode.endsWith('L') ? 'lab' : 'theory'
-                        };
-                        console.log(`${subjectCode}: Using default 3 hours/week`);
-                    }
-                } catch (err) {
-                    console.error(`Error fetching hours for ${subjectCode}:`, err);
-                    subjectHours[subjectCode] = { weekly_hours: 3, type: 'theory' };
-                }
-            }
-            
-            // Create exact sessions based on database weekly hours
-            const allSessions = [];
-            subjectCodes.forEach(subjectCode => {
-                const subjectData = subjects[subjectCode];
-                const hourInfo = subjectHours[subjectCode];
-                const weeklyHours = hourInfo.weekly_hours;
-                const type = hourInfo.type.toLowerCase();
-                const faculty = subjectData.faculty;
-                
-                console.log(`Creating ${weeklyHours} sessions for ${subjectCode} (${type})`);
-                
-                if (type === 'lab' || subjectCode.includes('Lab') || subjectCode.endsWith('L')) {
-                    // Labs: place in 2-hour continuous blocks
-                    const sessions = Math.floor(weeklyHours / 2);
-                    for (let i = 0; i < sessions; i++) {
-                        allSessions.push({ code: subjectCode, faculty, type: 'lab', slots: 2 });
-                    }
-                } else {
-                    // Theory: place in individual 1-hour slots
-                    for (let i = 0; i < weeklyHours; i++) {
-                        allSessions.push({ code: subjectCode, faculty, type: 'theory', slots: 1 });
-                    }
-                }
-            });
-            
-            console.log(`Total sessions to place: ${allSessions.length}`);
-            
-            // Track constraints
-            const dailySubjects = {};
-            const dailyLabs = {};
-            days.forEach(day => {
-                dailySubjects[day] = new Set();
-                dailyLabs[day] = new Set();
-            });
-            
-            // Place labs first with strict constraints
-            allSessions.filter(s => s.type === 'lab').forEach(item => {
-                let placed = false;
-                for (const day of days) {
-                    if (placed) break;
-                    
-                    // Constraint 1: No same subject on same day
-                    if (dailySubjects[day].has(item.code)) continue;
-                    
-                    // Constraint 2: Only one lab per day
-                    if (dailyLabs[day].size > 0) continue;
-                    
-                    // Constraint 3: No labs on Friday (keep Friday lighter)
-                    if (day === 'Friday') continue;
-                    
-                    for (const slotGroup of continuousSlots) {
-                        if (placed) break;
-                        if (slotGroup.every(slot => timetable[day][slot] === null && !hasFacultyClash(item.faculty, day, slot))) {
-                            const displayName = item.code.toLowerCase().includes('lab') ? item.code : `${item.code} Lab`;
-                            slotGroup.forEach(slot => {
-                                timetable[day][slot] = {
-                                    subject_code: item.code,
-                                    subject_name: displayName,
-                                    faculty_name: item.faculty,
-                                    section: section,
-                                    type: 'lab'
-                                };
-                            });
-                            dailySubjects[day].add(item.code);
-                            dailyLabs[day].add(item.code);
-                            placed = true;
-                            console.log(`Placed lab ${item.code} on ${day} slots ${slotGroup.join(',')}`);
-                        }
-                    }
-                }
-                
-                if (!placed) {
-                    console.warn(`Could not place lab ${item.code}`);
-                }
-            });
-            
-            // Place theory subjects with constraints
-            allSessions.filter(s => s.type === 'theory').forEach(item => {
-                let placed = false;
-                for (const day of days) {
-                    if (placed) break;
-                    
-                    // Constraint 1: No same subject on same day
-                    if (dailySubjects[day].has(item.code)) continue;
-                    
-                    const availableSlots = [];
-                    for (let slot = 0; slot < 6; slot++) {
-                        // Constraint 2: Friday last period must be free
-                        if (day === 'Friday' && slot === 5) continue;
-                        
-                        if (timetable[day][slot] === null && !hasFacultyClash(item.faculty, day, slot)) {
-                            availableSlots.push(slot);
-                        }
-                    }
-                    
-                    if (availableSlots.length > 0) {
-                        const slot = availableSlots[Math.floor(Math.random() * availableSlots.length)];
-                        timetable[day][slot] = {
-                            subject_code: item.code,
-                            subject_name: item.code,
-                            faculty_name: item.faculty,
-                            section: section,
-                            type: 'theory'
-                        };
-                        dailySubjects[day].add(item.code);
-                        placed = true;
-                        console.log(`Placed theory ${item.code} on ${day} slot ${slot}`);
-                    }
-                }
-                
-                if (!placed) {
-                    console.warn(`Could not place theory ${item.code}`);
-                }
-            });
-            
-            // Validate weekly hours
-            const actualHours = {};
-            Object.keys(timetable).forEach(day => {
-                Object.keys(timetable[day]).forEach(slot => {
-                    const entry = timetable[day][slot];
-                    if (entry && entry.subject_code) {
-                        actualHours[entry.subject_code] = (actualHours[entry.subject_code] || 0) + 1;
-                    }
-                });
-            });
-            
-            console.log('Weekly hours validation:');
-            subjectCodes.forEach(code => {
-                const expected = subjectHours[code].weekly_hours;
-                const actual = actualHours[code] || 0;
-                console.log(`${code}: Expected ${expected}, Actual ${actual}`);
-            });
-            
-            return timetable;
-        }
         
-        function createClashFreeTimetable(sectionAssignments, section) {
-            const timetable = {};
-            const subjectCodes = Object.keys(sectionAssignments);
-            
-            console.log('Creating clash-free timetable for section:', section);
-            console.log('Section assignments:', sectionAssignments);
-            
-            if (subjectCodes.length === 0) {
-                console.warn('No subjects found for section:', section);
-                return {};
-            }
-            
-            // Initialize empty timetable
-            days.forEach(day => {
-                timetable[day] = {};
-                for (let slot = 0; slot < 6; slot++) {
-                    timetable[day][slot] = null;
-                }
-            });
-            
-            // Get subject details from timetableData
-            const subjectDetails = {};
-            if (timetableData.subjects) {
-                timetableData.subjects.forEach(subject => {
-                    subjectDetails[subject.name] = {
-                        type: subject.type,
-                        weekly_hours: subject.weekly_hours || 3,
-                        credits: subject.credits || 3
-                    };
-                });
-            }
-            
-            // Place subjects with clash detection
-            const placedSubjects = new Set();
-            const dailySubjects = {};
-            
-            days.forEach(day => {
-                dailySubjects[day] = new Set();
-            });
-            
-            // First pass: Place lab subjects in continuous slots
-            subjectCodes.forEach(subjectCode => {
-                const facultyName = sectionAssignments[subjectCode];
-                const details = subjectDetails[subjectCode] || { type: 'theory', weekly_hours: 3 };
-                
-                if (details.type.toLowerCase() === 'lab') {
-                    const sessionsNeeded = Math.ceil(details.weekly_hours / 2);
-                    let sessionsPlaced = 0;
-                    
-                    for (let session = 0; session < sessionsNeeded && sessionsPlaced < sessionsNeeded; session++) {
-                        let placed = false;
-                        
-                        // Try to place in continuous slots
-                        for (const day of days) {
-                            if (placed) break;
-                            if (dailySubjects[day].has(subjectCode)) continue;
-                            
-                            for (const slotGroup of continuousSlots) {
-                                if (placed) break;
-                                
-                                // Check if both slots are available
-                                const canPlace = slotGroup.every(slot => {
-                                    return timetable[day][slot] === null && 
-                                           !hasFacultyClash(facultyName, day, slot);
-                                });
-                                
-                                if (canPlace) {
-                                    // Place lab in continuous slots
-                                    slotGroup.forEach(slot => {
-                                        timetable[day][slot] = {
-                                            subject_code: subjectCode,
-                                            subject_name: subjectCode,
-                                            faculty_name: facultyName,
-                                            section: section,
-                                            type: 'lab'
-                                        };
-                                    });
-                                    
-                                    dailySubjects[day].add(subjectCode);
-                                    sessionsPlaced++;
-                                    placed = true;
-                                    console.log(`Placed lab ${subjectCode} on ${day} slots ${slotGroup.join(',')}`);
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-            
-            // Second pass: Place theory subjects
-            subjectCodes.forEach(subjectCode => {
-                const facultyName = sectionAssignments[subjectCode];
-                const details = subjectDetails[subjectCode] || { type: 'theory', weekly_hours: 3 };
-                
-                if (details.type.toLowerCase() !== 'lab') {
-                    const sessionsNeeded = details.weekly_hours;
-                    let sessionsPlaced = 0;
-                    
-                    for (const day of days) {
-                        if (sessionsPlaced >= sessionsNeeded) break;
-                        
-                        for (let slot = 0; slot < 6; slot++) {
-                            if (sessionsPlaced >= sessionsNeeded) break;
-                            
-                            // Skip Friday last period
-                            if (day === 'Friday' && slot === 5) continue;
-                            
-                            // Don't repeat same subject on same day
-                            if (dailySubjects[day].has(subjectCode)) break;
-                            
-                            // Check if slot is available and no faculty clash
-                            if (timetable[day][slot] === null && !hasFacultyClash(facultyName, day, slot)) {
-                                timetable[day][slot] = {
-                                    subject_code: subjectCode,
-                                    subject_name: subjectCode,
-                                    faculty_name: facultyName,
-                                    section: section,
-                                    type: 'theory'
-                                };
-                                
-                                dailySubjects[day].add(subjectCode);
-                                sessionsPlaced++;
-                                console.log(`Placed theory ${subjectCode} on ${day} slot ${slot}`);
-                            }
-                        }
-                    }
-                }
-            });
-            
-            console.log('Generated clash-free timetable:', timetable);
-            return timetable;
-        }
-        
-        function hasFacultyClash(facultyName, day, slot) {
-            // Check against existing timetables in Supabase for current department
-            const currentDept = timetableData?.department || 'ISE';
-            return existingTimetables.some(entry => 
-                entry.faculty_name === facultyName && 
-                entry.day === day && 
-                entry.time_slot === slot &&
-                entry.department !== currentDept  // Only check other departments
-            );
-        }
-        
-        async function saveTimetableToSupabase(section, generatedTimetable) {
-            try {
-                // Clear existing timetable for this section
-                await supabase
-                    .from('timetables')
-                    .delete()
-                    .eq('section', section)
-                    .eq('department', timetableData.department)
-                    .eq('academic_year', timetableData.academicYear)
-                    .eq('semester', timetableData.semester);
-                
-                // Insert new timetable entries
-                const entries = [];
-                Object.keys(generatedTimetable).forEach(day => {
-                    Object.keys(generatedTimetable[day]).forEach(slotId => {
-                        const entry = generatedTimetable[day][slotId];
-                        if (entry && entry.subject_code && entry.faculty_name) {
-                            entries.push({
-                                faculty_name: entry.faculty_name,
-                                subject_code: entry.subject_code,
-                                subject_name: entry.subject_name,
-                                day: day,
-                                time_slot: parseInt(slotId),
-                                section: section,
-                                department: timetableData.department,
-                                academic_year: timetableData.academicYear,
-                                semester: timetableData.semester,
-                                year: timetableData.year
-                            });
-                        }
-                    });
-                });
-                
-                if (entries.length > 0) {
-                    const { error } = await supabase.from('timetables').insert(entries);
-                    if (error) throw error;
-                    console.log(`Saved ${entries.length} timetable entries for section ${section}`);
-                }
-                
-            } catch (error) {
-                console.error('Error saving timetable to Supabase:', error);
-            }
-        }
-
-        function applyTimetableToSection(section, generatedTimetable, sectionIndex) {
+        function applyTimetableToUI(section, generatedTimetable, sectionIndex) {
             const containers = document.querySelectorAll('.container');
             const container = containers[sectionIndex];
             
@@ -1019,8 +799,6 @@
             }
             
             console.log('Applying timetable to section:', section, generatedTimetable);
-            
-            let appliedCount = 0;
             
             // Clear existing cells first
             container.querySelectorAll('.subject-cell').forEach(cell => {
@@ -1039,85 +817,65 @@
                             const cell = container.querySelector(`[data-day="${day}"][data-slot="${slotId}"]`);
                             
                             if (cell) {
-                                const facultyInitials = entry.faculty_name.split(' ').map(n => n[0]).join('');
                                 cell.innerHTML = `
-                                    <div style="font-weight: bold; font-size: 11px; margin-bottom: 2px; color: #333;">${entry.subject_code}</div>
-                                    <div style="font-size: 9px; color: #666;">${facultyInitials}</div>
+                                    <div style="font-weight: bold; font-size: 11px; margin-bottom: 2px; color: #333; font-family: monospace;">${entry.subject_code}</div>
+                                    <div style="font-size: 10px; color: #555;">${entry.subject_name}</div>
+                                    <div style="font-size: 9px; color: #666; font-style: italic; margin-top: 2px;">${entry.faculty_initials}</div>
                                 `;
                                 cell.style.backgroundColor = getSubjectColor(entry.subject_code);
                                 cell.style.padding = '6px 4px';
                                 cell.setAttribute('data-subject', entry.subject_code);
                                 cell.setAttribute('data-faculty', entry.faculty_name);
-                                appliedCount++;
                             }
                         }
                     });
                 }
             });
-            
-            console.log(`Applied ${appliedCount} subjects to section ${section}`);
-            
+           
             // Update subject table
-            updateSubjectTable(container, generatedTimetable);
-            updateSubjectTableFromTimetable();
+            updateSubjectTable(container, generatedTimetable, section);
         }
 
-        function updateSubjectTable(container, generatedTimetable) {
+        function updateSubjectTable(container, generatedTimetable, section) {
             const subjectTable = container.querySelector('.subject-table tbody');
             if (!subjectTable) return;
             
-            // Extract unique subjects from generated timetable
             const uniqueSubjects = new Map();
             
-            Object.keys(generatedTimetable).forEach(day => {
+            days.forEach(day => {
                 Object.keys(generatedTimetable[day]).forEach(slotId => {
                     const entry = generatedTimetable[day][slotId];
                     if (entry && entry.subject_code && entry.faculty_name) {
                         uniqueSubjects.set(entry.subject_code, {
                             code: entry.subject_code,
-                            name: entry.subject_name || entry.subject_code,
+                            name: entry.subject_name,
                             faculty: entry.faculty_name,
-                            initials: entry.faculty_name.split(' ').map(n => n[0]).join('')
+                            initials: entry.faculty_initials
                         });
                     }
                 });
             });
             
-            // Update table rows
-            const rows = subjectTable.querySelectorAll('tr');
             let subjectIndex = 0;
             
             uniqueSubjects.forEach((subject, code) => {
-                if (rows[subjectIndex] && subjectIndex < 6) {
-                    const cells = rows[subjectIndex].querySelectorAll('td');
-                    if (cells.length >= 5) {
-                        cells[0].textContent = subject.code;
-                        cells[1].textContent = subject.name;
-                        cells[2].textContent = subject.code;
-                        cells[3].textContent = subject.faculty;
-                        cells[4].textContent = subject.initials;
-                    }
+                if (subjectIndex < 10) {
+                    document.getElementById(`subCode-${section}-${subjectIndex}`).textContent = subject.code;
+                    document.getElementById(`subName-${section}-${subjectIndex}`).textContent = subject.name;
+                    document.getElementById(`subShort-${section}-${subjectIndex}`).textContent = subject.code;
+                    document.getElementById(`faculty-${section}-${subjectIndex}`).textContent = subject.faculty;
+                    document.getElementById(`initials-${section}-${subjectIndex}`).textContent = subject.initials;
                     subjectIndex++;
                 }
             });
-            
-            // Clear remaining rows
-            for (let i = subjectIndex; i < 6; i++) {
-                if (rows[i]) {
-                    const cells = rows[i].querySelectorAll('td');
-                    cells.forEach(cell => cell.textContent = '');
-                }
-            }
         }
 
         function getSubjectColor(subjectCode) {
-            const colors = {
-                'TOC': '#e3f2fd', 'CNS': '#f3e5f5', 'ST': '#e8f5e8',
-                'DMDW': '#fff3e0', 'ML': '#fce4ec', 'AI': '#e0f2f1',
-                'OS': '#f1f8e9', 'DBMS': '#fff8e1', 'SE': '#e8eaf6',
-                'CN': '#f9fbe7', 'DS': '#e1f5fe', 'ALGO': '#fdf2e9'
-            };
-            return colors[subjectCode] || '#f8f9fa';
+            const colors = [ '#e3f2fd', '#f3e5f5', '#e8f5e9', '#fff3e0', '#fce4ec', '#e0f2f1', '#f1f8e9', '#fff8e1', '#e8eaf6', '#f9fbe7' ];
+            if (!subjectCode) return colors[0];
+            let hash = 0;
+            for (let i = 0; i < subjectCode.length; i++) hash = subjectCode.charCodeAt(i) + ((hash << 5) - hash);
+            return colors[Math.abs(hash) % colors.length];
         }
 
         function goBack() {
@@ -1125,14 +883,8 @@
         }
 
         async function exportPDF() {
-            if (!window.html2canvas || !window.jspdf) {
-                showAlert('❌ PDF libraries not loaded. Please refresh the page.', 'danger');
-                return;
-            }
-            
+            showAlert('📄 Generating PDF...', 'info');
             try {
-                showAlert('📄 Generating PDF...', 'info');
-                
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF('l', 'mm', 'a4'); // Landscape orientation
                 
@@ -1179,14 +931,11 @@
                 const filename = `${dept}_Sem${sem}_Timetable_${dateStr}.pdf`;
                 
                 pdf.save(filename);
-                
                 showAlert('✅ PDF exported successfully!', 'success');
-                
             } catch (error) {
-                console.error('PDF export error:', error);
                 showAlert(`❌ Export failed: ${error.message}`, 'danger');
-                
-                // Restore controls in case of error
+                console.error('PDF export error:', error);
+            } finally {
                 const controls = document.querySelector('.controls');
                 if (controls) controls.style.display = 'flex';
             }
@@ -1194,12 +943,13 @@
 
         async function saveTimetable() {
             try {
-                showAlert('💾 Validating and saving timetable...', 'info');
+                showAlert('💾 Saving not implemented yet.', 'warning');
+                return;
                 
                 const department = timetableData?.department || 'ISE';
-                const currentTimetable = extractCurrentTimetable();
+                const currentTimetable = extractCurrentTimetableFromUI();
                 
-                // Validate weekly hours before saving
+                // Example validation (can be expanded)
                 for (const sectionName of Object.keys(currentTimetable)) {
                     const sectionTimetable = currentTimetable[sectionName];
                     const actualHours = {};
@@ -1214,12 +964,11 @@
                         });
                     });
                     
-                    // Get expected hours from database
                     const subjects = timetableData?.sections?.find(s => s.name === sectionName)?.assignments || [];
                     const validationErrors = [];
                     
                     for (const assignment of subjects) {
-                        const expected = assignment.weekly_hours || 3;
+                        const expected = assignment.weekly_hours;
                         const actual = actualHours[assignment.subject] || 0;
                         if (actual !== expected) {
                             validationErrors.push(`${assignment.subject}: Expected ${expected} hours, found ${actual} hours`);
@@ -1232,7 +981,6 @@
                     }
                 }
                 
-                // Save validated timetable
                 for (const sectionName of Object.keys(currentTimetable)) {
                     await saveTimetableToSupabase(sectionName, currentTimetable[sectionName]);
                 }
@@ -1245,25 +993,32 @@
         }
 
         // Smart Swap Functionality
+        let selectedCells = [];
+        
         function toggleSwapMode() {
-            swapMode = !swapMode;
-            selectedCells = [];
+            swapMode = !swapMode; 
+            selectedCell = null;
             
             const btn = document.querySelector('.btn-swap');
             const cells = document.querySelectorAll('.subject-cell');
             
             if (swapMode) {
-                btn.innerHTML = '❌ Cancel Swap';
-                btn.style.background = '#dc3545';
-                cells.forEach(cell => cell.classList.add('swap-mode'));
-                showAlert('🔄 Swap mode activated. Click two periods to swap them.', 'info');
+                btn.innerHTML = '❌ Cancel Swap'; btn.style.background = '#ef4444';
+                cells.forEach(cell => {
+                    cell.classList.add('swap-mode');
+                    cell.style.cursor = 'pointer';
+                });
+                showAlert('🔄 Click the period you want to change', 'info');
             } else {
                 btn.innerHTML = '🔄 Smart Swap';
-                btn.style.background = '#6f42c1';
+                btn.style.background = '#a855f7';
                 cells.forEach(cell => {
                     cell.classList.remove('swap-mode', 'selected', 'alternative');
+                    cell.style.background = '';
+                    cell.style.border = '';
+                    cell.style.cursor = '';
                 });
-                showAlert('❌ Swap mode deactivated.', 'warning');
+                showAlert('❌ Swap cancelled', 'warning');
             }
         }
         
@@ -1271,23 +1026,104 @@
             if (swapMode) {
                 const day = cell.dataset.day;
                 const slot = parseInt(cell.dataset.slot);
+                const currentSubject = cell.getAttribute('data-subject');
+                const currentFaculty = cell.getAttribute('data-faculty');
                 
-                if (cell.classList.contains('selected')) {
-                    cell.classList.remove('selected');
-                    selectedCells = selectedCells.filter(c => !(c.day === day && c.slot === slot));
-                    clearAlternatives();
-                } else if (selectedCells.length < 2) {
-                    cell.classList.add('selected');
-                    selectedCells.push({ day, slot, element: cell });
+                if (!selectedCell) {
+                    // First click - select period to change
+                    selectedCell = { cell, day, slot, subject: currentSubject, faculty: currentFaculty };
+                    cell.classList.add('selected'); cell.style.background = '#a855f7'; cell.style.color = 'white';
                     
-                    if (selectedCells.length === 2) {
-                        performSwap();
+                    // Find and highlight safe swap options in GREEN
+                    findSafeSwapOptions(currentFaculty, day, slot);
+                    showAlert('✅ Now click a GREEN period to swap', 'success');
+                } else {
+                    // Second click - perform swap
+                    if (cell.classList.contains('alternative')) {
+                        performSafeSwap(selectedCell, { day, slot, cell });
+                        showAlert('✅ Swap completed!', 'success');
+                        toggleSwapMode(); // Exit swap mode
+                    } else if (cell === selectedCell.cell) {
+                        // Clicked same cell - deselect
+                        cell.classList.remove('selected'); cell.style.background = ''; cell.style.color = '';
+                        clearAlternatives();
+                        selectedCell = null;
+                        showAlert('🔄 Selection cleared. Click another period', 'info');
+                    } else {
+                        showAlert('❌ Select a GREEN period for safe swap', 'danger');
                     }
                 }
-            } else {
+            } else if (editMode) {
                 // Edit mode
                 editCell(cell);
             }
+        }
+        
+        function findSafeSwapOptions(faculty, currentDay, currentSlot) {
+            clearAlternatives();
+            
+            days.forEach(day => {
+                for (let slot = 0; slot < 6; slot++) {
+                    if (day === 'Friday' && slot === 5) continue;
+                    if (day === currentDay && slot === currentSlot) continue;
+                    
+                    const cell = document.querySelector(`[data-day="${day}"][data-slot="${slot}"]`);
+                    if (!cell) continue;
+                    
+                    const targetFaculty = cell.getAttribute('data-faculty');
+                    
+                    // Check if swap is safe (no faculty clashes)
+                    const isSafe = checkSwapSafety(faculty, currentDay, currentSlot, targetFaculty, day, slot);
+                    
+                    if (isSafe) {
+                        cell.classList.add('alternative');
+                        cell.style.background = '#d4edda'; cell.style.border = '3px solid #28a745';
+                    }
+                }
+            });
+        }
+        
+        function checkSwapSafety(faculty1, day1, slot1, faculty2, day2, slot2) {
+            // Check if faculty1 has another class at (day2, slot2)
+            const faculty1Clash = Array.from(document.querySelectorAll(`[data-day="${day2}"][data-slot="${slot2}"]`)).some(
+                c => c.getAttribute('data-faculty') === faculty1 && c !== selectedCell?.cell
+            );
+            
+            // Check if faculty2 has another class at (day1, slot1) 
+            const faculty2Clash = faculty2 ? Array.from(document.querySelectorAll(`[data-day="${day1}"][data-slot="${slot1}"]`)).some(
+                c => c.getAttribute('data-faculty') === faculty2
+            ) : false;
+            
+            return !faculty1Clash && !faculty2Clash;
+        }
+        
+        function performSafeSwap(source, target) {
+            // Swap HTML content
+            const tempHTML = source.cell.innerHTML;
+            const tempSubject = source.cell.getAttribute('data-subject');
+            const tempFaculty = source.cell.getAttribute('data-faculty');
+            const tempBg = source.cell.style.backgroundColor;
+            
+            source.cell.innerHTML = target.cell.innerHTML;
+            source.cell.setAttribute('data-subject', target.cell.getAttribute('data-subject') || '');
+            source.cell.setAttribute('data-faculty', target.cell.getAttribute('data-faculty') || '');
+            source.cell.style.backgroundColor = target.cell.style.backgroundColor;
+            
+            target.cell.innerHTML = tempHTML;
+            target.cell.setAttribute('data-subject', tempSubject || '');
+            target.cell.setAttribute('data-faculty', tempFaculty || '');
+            target.cell.style.backgroundColor = tempBg;
+            
+            // Clear swap styling
+            source.cell.classList.remove('selected'); source.cell.style.border = ''; source.cell.style.color = '';
+            target.cell.classList.remove('alternative'); target.cell.style.border = '';
+            
+            // Update subject table
+            updateSubjectTableFromTimetable();
+            
+            // Save to database
+            const currentTimetable = extractCurrentTimetable();
+            updateSupabaseAfterSwap(currentTimetable);
         }
         
         function editCell(cell) {
@@ -1402,12 +1238,12 @@
         }
         
         async function checkSwapClashes(cell1, cell2, currentTimetable) {
-            const section = 'A'; // Assuming section A for now
+            const section = 'A'; // Assuming section A for now 
             
             const entry1 = currentTimetable[section]?.[cell1.day]?.[cell1.slot];
             const entry2 = currentTimetable[section]?.[cell2.day]?.[cell2.slot];
             
-            // If both cells are empty, no clash
+            // If both cells are empty, no clash 
             if (!entry1 && !entry2) {
                 return { hasClash: false };
             }
@@ -1425,7 +1261,7 @@
                         .eq('faculty_name', entry1.faculty_name)
                         .eq('day', cell2.day)
                         .eq('time_slot', cell2.slot)
-                        .neq('department', currentDept);  // Check other departments
+                        .neq('department', currentDept);  // Check other departments 
                     
                     if (conflict1 && conflict1.length > 0) {
                         conflicts.push(`Faculty ${entry1.faculty_name} already engaged at ${cell2.day} ${cell2.slot}`);
@@ -1439,7 +1275,7 @@
                         .eq('faculty_name', entry2.faculty_name)
                         .eq('day', cell1.day)
                         .eq('time_slot', cell1.slot)
-                        .neq('department', currentDept);  // Check other departments
+                        .neq('department', currentDept);  // Check other departments 
                     
                     if (conflict2 && conflict2.length > 0) {
                         conflicts.push(`Faculty ${entry2.faculty_name} already engaged at ${cell1.day} ${cell1.slot}`);
@@ -1459,7 +1295,7 @@
         }
         
         function executeSwap(cell1, cell2, currentTimetable) {
-            const section = 'A';
+            const section = 'A'; 
             
             // Swap in data structure
             const temp = currentTimetable[section][cell1.day][cell1.slot];
@@ -1474,7 +1310,7 @@
         
         async function showAlternativeSlots(cell1, cell2, currentTimetable) {
             clearAlternatives();
-            
+
             const alternatives = [];
             const section = 'A';
             
@@ -1482,7 +1318,7 @@
             for (const day of days) {
                 for (let slot = 0; slot < 6; slot++) {
                     // Skip Friday last period
-                    if (day === 'Friday' && slot === 5) continue;
+                    if (day === 'Friday' && slot === 5) continue; 
                     
                     // Check if this slot could work for either entry
                     const isEmpty = !currentTimetable[section][day][slot];
@@ -1515,7 +1351,7 @@
         }
         
         async function showAISwapSuggestions(cell1, cell2, currentTimetable) {
-            const section = 'A';
+            const section = 'A'; 
             const entry1 = currentTimetable[section]?.[cell1.day]?.[cell1.slot];
             const entry2 = currentTimetable[section]?.[cell2.day]?.[cell2.slot];
             
@@ -1572,7 +1408,7 @@
         async function updateSupabaseAfterSwap(currentTimetable) {
             try {
                 // Update Supabase with new timetable data
-                const section = 'A';
+                const section = 'A'; 
                 
                 // Clear existing entries for this section and department
                 const currentDept = timetableData?.department || 'ISE';
@@ -1621,12 +1457,12 @@
         }
 
         function showAlert(message, type) {
-            const alertDiv = document.createElement('div');
-            alertDiv.className = `alert alert-${type}`;
-            alertDiv.textContent = message;
+            const alertDiv = document.createElement('div'); 
+            alertDiv.className = `alert alert-${type}`; 
+            alertDiv.textContent = message; 
             
-            document.body.appendChild(alertDiv);
-            
+            document.body.appendChild(alertDiv); 
+
             setTimeout(() => {
                 alertDiv.remove();
             }, 3000);
@@ -1636,7 +1472,7 @@
             const containers = document.querySelectorAll('.container');
             if (containers.length === 0) return;
             
-            const container = containers[0]; // Use first container
+            const container = containers[0]; // Use first container 
             const uniqueSubjects = new Map();
             
             // Extract subjects from timetable
@@ -1718,7 +1554,7 @@
                 };
                 
                 localStorage.setItem('timetableData', JSON.stringify(timetableData));
-                localStorage.setItem('department', timetableData.department);
+                localStorage.setItem('department', timetableData.department); 
                 
                 // Regenerate structure
                 generateTimetableStructure();
@@ -1738,15 +1574,41 @@
             
             if (editMode) {
                 btn.innerHTML = '✅ Done';
-                btn.style.background = '#28a745';
+                btn.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
                 btn.style.color = 'white';
                 showAlert('✏️ Edit mode activated. Click cells to edit.', 'info');
             } else {
                 btn.innerHTML = '✏️ Edit';
-                btn.style.background = '#ffc107';
+                btn.style.background = 'linear-gradient(135deg, #ffc107 0%, #e0a800 100%)';
                 btn.style.color = '#333';
                 showAlert('✅ Edit mode deactivated.', 'success');
             }
+        }
+
+        function showNextSection() {
+            if (!timetableData || timetableData.sections.length <= 1) return;
+            currentSectionIndex = (currentSectionIndex + 1) % timetableData.sections.length;
+            updateVisibleSection();
+        }
+
+        function showPreviousSection() {
+            if (!timetableData || timetableData.sections.length <= 1) return;
+            currentSectionIndex = (currentSectionIndex - 1 + timetableData.sections.length) % timetableData.sections.length;
+            updateVisibleSection();
+        }
+
+        function updateVisibleSection() {
+            const sections = document.querySelectorAll('.timetable-section-container');
+            sections.forEach((sec, index) => {
+                sec.style.display = index === currentSectionIndex ? 'block' : 'none';
+            });
+            updateSectionNavButtons();
+        }
+
+        function updateSectionNavButtons() {
+            const totalSections = timetableData?.sections?.length || 0;
+            document.querySelector('[onclick="showPreviousSection()"]').disabled = totalSections <= 1;
+            document.querySelector('[onclick="showNextSection()"]').disabled = totalSections <= 1;
         }
     </script>
 </body>
