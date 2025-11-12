@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Timetable View</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary: #004085;
+            --light-grey: #f8f9fa;
+            --border: #dee2e6;
+            --text: #1e3c72;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between; 
+            padding: 5px 20px;
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: white;
+            border-bottom: 3px solid #1e40af;
+            box-shadow: 0 4px 20px rgba(30, 64, 175, 0.3);
+        }
+        .header img {
+            max-height: 70px;
+            width: auto;
+            border-radius: 50%;
+        }
+        .header-text {
+            text-align: center;
+            flex: 1;
+        }
+        .header-text h1 {
+            margin: 2px 0;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        .page-header {
+            text-align: center;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+        .page-header h2 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .page-header p {
+            margin: 5px 0 0 0;
+            font-size: 16px;
+            color: #6c757d;
+        }
+        .timetable {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .timetable th, .timetable td {
+            border: 1px solid var(--border);
+            padding: 10px;
+            text-align: center;
+            font-size: 12px;
+            min-height: 70px;
+            vertical-align: middle;
+        }
+        .timetable th {
+            background: var(--light-grey);
+            color: var(--text);
+            font-weight: bold;
+        }
+        .day-header {
+            font-weight: bold;
+            width: 100px;
+        }
+        .class-cell {
+            background: #e3f2fd;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        .class-cell .subject-code {
+            font-family: monospace;
+            font-size: 14px;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .class-cell .details {
+            font-size: 11px;
+            color: #333;
+            font-weight: normal;
+        }
+        .back-button {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+        .back-button:hover {
+            background: #0056b3;
+        }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .export-button {
+            padding: 10px 20px;
+            background: #fd7e14;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo-left"><img src="left-logo.png" alt="MET Logo"></div>
+        <div class="header-text">
+            <h1 style="color:white;">🎓 Maharaja Education Trust (R), Mysuru</h1>
+            <h1 style="color:white;">🏛️ Maharaja Institute of Technology, Mysore</h1>
+        </div>
+        <div class="logo-right"><img src="right-logo.png" alt="Circle Logo"></div>
+    </div>
+
+    <div class="container">
+        <div class="controls">
+            <a href="javascript:history.back()" class="back-button">← Back</a>
+            <button class="export-button" onclick="exportFacultyPDF()">📄 Export to PDF</button>
+        </div>
+        <div class="page-header">
+            <h2 id="facultyNameHeader">Faculty Timetable</h2>
+            <p>Consolidated weekly schedule across all departments</p>
+        </div>
+
+        <table class="timetable">
+            <thead>
+                <tr>
+                    <th>Day/Time</th>
+                    <th>09:00 - 10:00</th>
+                    <th>10:00 - 11:00</th>
+                    <th>11:15 - 12:15</th>
+                    <th>12:15 - 13:15</th>
+                    <th>14:00 - 15:00</th>
+                    <th>15:00 - 16:00</th>
+                </tr>
+            </thead>
+            <tbody id="timetableBody">
+                <!-- Rows will be generated by JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://bkmzyhroignpjebfpqug.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrbXp5aHJvaWducGplYmZwcXVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0MjA1NDUsImV4cCI6MjA3Mjk5NjU0NX0.ICE2eYzFZvz0dtNpAa5YlJTZD-idc2J76wn1ZeHwwck';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const days = ['Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const facultyName = urlParams.get('faculty');
+
+            if (facultyName) {
+                document.getElementById('facultyNameHeader').textContent = `Timetable for ${facultyName}`;
+                generateTimetableStructure();
+                loadFacultyTimetable(facultyName);
+            } else {
+                document.getElementById('facultyNameHeader').textContent = 'No Faculty Selected';
+                document.getElementById('timetableBody').innerHTML = '<tr><td colspan="7">Please select a faculty to view their timetable.</td></tr>';
+            }
+        });
+
+        function generateTimetableStructure() {
+            const tbody = document.getElementById('timetableBody');
+            tbody.innerHTML = '';
+            days.forEach(day => {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td class="day-header">${day}</td>`;
+                for (let i = 0; i < 6; i++) {
+                    row.innerHTML += `<td data-day="${day}" data-slot="${i}">-</td>`;
+                }
+                tbody.appendChild(row);
+            });
+        }
+
+        async function loadFacultyTimetable(facultyName) {
+            try {
+                const { data, error } = await supabase
+                    .from('timetables')
+                    .select('day, time_slot, subject_code, department, section')
+                    .eq('faculty_name', facultyName);
+
+                if (error) throw error;
+
+                if (data && data.length > 0) {
+                    populateTimetable(data);
+                } else {
+                    console.log('No schedule found for this faculty.');
+                }
+
+            } catch (error) {
+                console.error('Error fetching faculty timetable:', error);
+                alert('Failed to load faculty schedule.');
+            }
+        }
+
+        function populateTimetable(schedule) {
+            schedule.forEach(entry => {
+                const cell = document.querySelector(`td[data-day="${entry.day}"][data-slot="${entry.time_slot}"]`);
+                if (cell) {
+                    cell.classList.add('class-cell');
+                    cell.innerHTML = `
+                        <span class="subject-code">${entry.subject_code || 'N/A'}</span>
+                        <span class="details">
+                            Dept: ${entry.department || 'N/A'}<br>
+                            Sec: ${entry.section || 'N/A'}
+                        </span>
+                    `;
+                }
+            });
+        }
+
+        async function exportFacultyPDF() {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4'); // Portrait orientation
+            const facultyName = new URLSearchParams(window.location.search).get('faculty') || 'Faculty';
+
+            const container = document.getElementById('exportContainer');
+            const backButton = container.querySelector('.back-button');
+            const exportButton = container.querySelector('.export-button');
+
+            // Temporarily hide buttons for a clean export
+            backButton.style.display = 'none';
+            exportButton.style.display = 'none';
+
+            try {
+                const canvas = await html2canvas(container, {
+                    scale: 2, // Higher scale for better quality
+                    useCORS: true,
+                    backgroundColor: '#ffffff'
+                });
+
+                const imgData = canvas.toDataURL('image/png');
+                const imgWidth = 190; // A4 width minus margins
+                const pageHeight = 295; // A4 height
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                let heightLeft = imgHeight;
+                let position = 10;
+
+                pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+
+                const dateStr = new Date().toISOString().split('T')[0];
+                pdf.save(`Timetable_${facultyName.replace(/ /g, '_')}_${dateStr}.pdf`);
+
+            } catch (error) {
+                console.error('PDF Export failed:', error);
+                alert('Could not export to PDF. See console for details.');
+            } finally {
+                // Restore buttons
+                backButton.style.display = 'inline-block';
+                exportButton.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>

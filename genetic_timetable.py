@@ -1,9 +1,17 @@
 import random
 import json
 import sys
-from supabase.client import create_client, Client
+from supabase.client import create_client, Client, ClientOptions
 from typing import List, Dict, Any, Tuple
 import os
+
+# --- CRITICAL FIX FOR PROXY ERROR ---
+# Unset proxy environment variables that conflict with the Supabase library.
+# This is the definitive solution to the "unexpected keyword argument 'proxy'" error.
+os.environ.pop('http_proxy', None)
+os.environ.pop('HTTP_PROXY', None)
+os.environ.pop('https_proxy', None)
+os.environ.pop('HTTPS_PROXY', None)
 
 class SupabaseTimetableGA:
     def __init__(self):
@@ -30,10 +38,10 @@ class SupabaseTimetableGA:
         self.crossover_rate = 0.85
 
     def fetch_data(self, department: str, section: str):
-        """Fetch subjects, faculty, and existing timetables from Supabase"""
+        """Fetch subjects, faculty, and ALL existing timetables from Supabase for clash detection"""
         try:
             # Get subjects for department with hours per week
-            subjects_response = self.supabase.table('subjects').select('*').eq('department', department).execute()
+            subjects_response = self.supabase.table('subjects').select('*').execute() # Fetch all subjects for cross-dept
             subjects = subjects_response.data
             
             # Get faculty for department
@@ -41,7 +49,7 @@ class SupabaseTimetableGA:
             faculty = faculty_response.data
             
             # Get existing timetables to avoid conflicts
-            existing_response = self.supabase.table('timetables').select('*').execute()
+            existing_response = self.supabase.table('timetables').select('faculty_name, day, time_slot').execute()
             existing_timetables = existing_response.data
             
             return subjects, faculty, existing_timetables
@@ -53,9 +61,11 @@ class SupabaseTimetableGA:
     def load_section_assignments(self, section_data):
         """Load faculty assignments from timetable-new.htm data"""
         assignments = {}
-        if section_data and 'subjects' in section_data:
-            for subject_code, faculty_name in section_data['subjects'].items():
-                assignments[subject_code] = faculty_name
+        # The incoming section_data is the 'assignments' list from the frontend
+        if isinstance(section_data, list):
+            for assignment in section_data:
+                # Use subject name as the key, as it's unique per semester
+                assignments[assignment['subject']] = assignment['faculty']
         return assignments
     
     def get_subject_hours_from_db(self, department, subject_codes):
@@ -65,7 +75,7 @@ class SupabaseTimetableGA:
             for subject_code in subject_codes:
                 # Get from Supabase database
                 if department:
-                    response = self.supabase.table('subjects').select('weekly_hours, type').eq('department', department).eq('name', subject_code).execute()
+                    response = self.supabase.table('subjects').select('weekly_hours, type').eq('name', subject_code).execute()
                     
                     if response.data and len(response.data) > 0:
                         subject_data = response.data[0]
@@ -101,38 +111,38 @@ class SupabaseTimetableGA:
                 return True
         return False
 
-    def create_individual(self, subjects: List[Dict], section: str, existing_timetables: List[Dict], section_data: Dict) -> Dict:
+    def create_individual(self, assignments_list: List[Dict], section: str, existing_timetables: List[Dict]) -> Dict:
         """Create random timetable using exact weekly hours from database"""
         timetable = {day: {slot: None for slot in range(6)} for day in self.days}
         
-        section_assignments = self.load_section_assignments(section_data)
-        if not section_assignments:
+        # Use the direct assignments_list passed in
+        if not assignments_list:
             return timetable
         
         department = getattr(self, '_current_department', None)
-        subject_hours = self.get_subject_hours_from_db(department, list(section_assignments.keys()))
+        subject_hours = self.get_subject_hours_from_db(department, [a['subject'] for a in assignments_list])
         
         # Create exact sessions based on weekly hours
         all_sessions = []
-        for subject_code, faculty_name in section_assignments.items():
-            hours_info = subject_hours.get(subject_code, {'weekly_hours': 3, 'type': 'theory'})
+        for assignment in assignments_list:
+            hours_info = subject_hours.get(assignment['subject'], {'weekly_hours': 3, 'type': 'theory'})
             weekly_hours = int(hours_info['weekly_hours'])
             subject_type = hours_info['type'].lower()
             
-            print(f"Creating sessions for {subject_code}: {weekly_hours} hours, type: {subject_type}", file=sys.stderr)
+            print(f"Creating sessions for {assignment['subject']}: {weekly_hours} hours, type: {subject_type}", file=sys.stderr)
             
-            if subject_type == 'lab' or subject_code.endswith('L'):
+            if subject_type == 'lab':
                 # Labs: place in 2-hour continuous blocks
                 sessions_needed = weekly_hours // 2
                 for _ in range(sessions_needed):
                     all_sessions.append({
-                        'subject': subject_code, 'faculty': faculty_name, 'type': 'lab', 'slots': 2
+                        'subject': assignment['subject'], 'faculty': assignment['faculty'], 'type': 'lab', 'slots': 2
                     })
             else:
                 # Theory: place in individual 1-hour slots
                 for _ in range(weekly_hours):
                     all_sessions.append({
-                        'subject': subject_code, 'faculty': faculty_name, 'type': 'theory', 'slots': 1
+                        'subject': assignment['subject'], 'faculty': assignment['faculty'], 'type': 'theory', 'slots': 1
                     })
         
         print(f"Total sessions to place: {len(all_sessions)}", file=sys.stderr)
@@ -143,8 +153,17 @@ class SupabaseTimetableGA:
         daily_labs = {day: set() for day in self.days}
         
         # Place sessions with strict constraints
+        unplaced_sessions = []
         for session in all_sessions:
-            self._place_session_with_constraints(timetable, session, daily_subjects, daily_labs, existing_timetables, section)
+            placed = self._place_session_with_constraints(timetable, session, daily_subjects, daily_labs, existing_timetables, section)
+            if not placed:
+                unplaced_sessions.append(session)
+        
+        # Force-place any remaining sessions into the first available empty slots
+        if unplaced_sessions:
+            print(f"Force-placing {len(unplaced_sessions)} unplaced sessions.", file=sys.stderr)
+            for session in unplaced_sessions:
+                self._force_place_session(timetable, session, section)
         
         return timetable
     
@@ -163,7 +182,7 @@ class SupabaseTimetableGA:
                     continue
                     
                 # Only one lab per day
-                if daily_labs[day]:
+                if daily_labs[day]: # Strict: only one lab session of any kind per day
                     continue
                     
                 # Skip Friday last period (keep it free)
@@ -189,8 +208,9 @@ class SupabaseTimetableGA:
                 
                 daily_subjects[day].add(subject)
                 daily_labs[day].add(subject)
+                return True
                 
-        else:
+        else: # Theory
             # Theory subject placement
             available_slots = []
             for day in self.days:
@@ -214,14 +234,31 @@ class SupabaseTimetableGA:
                     'section': section, 'room': f"Room-{random.randint(101, 120)}", 'type': 'theory'
                 }
                 daily_subjects[day].add(subject)
+                return True
+        
+        return False # Could not place session
     
+    def _force_place_session(self, timetable, session, section):
+        """Forcefully place a session in the first available empty slot."""
+        for day in self.days:
+            for slot_id in range(6):
+                if timetable[day][slot_id] is None:
+                    timetable[day][slot_id] = {
+                        'subject_code': session['subject'],
+                        'subject_name': session['subject'],
+                        'faculty_name': session['faculty'],
+                        'section': section,
+                        'room': f"Room-{random.randint(101, 120)}",
+                        'type': session['type']
+                    }
+                    return # Placed, so exit
     def _is_full_lab_day(self, timetable, day):
         """Check if day already has too many lab sessions"""
         lab_count = sum(1 for slot in range(6) 
                        if timetable[day][slot] and timetable[day][slot].get('type') == 'lab')
         return lab_count >= 4  # Max 2 lab sessions (4 slots) per day
 
-    def calculate_fitness(self, individual: Dict, existing_timetables: List[Dict], section_data: Dict) -> float:
+    def calculate_fitness(self, individual: Dict, existing_timetables: List[Dict], section_data: List[Dict]) -> float:
         """Calculate comprehensive fitness score with strict constraints"""
         fitness = 1000.0  # Start with higher base score
         
@@ -265,6 +302,17 @@ class SupabaseTimetableGA:
         # Strict penalty for same subject multiple times on same day
         for day in daily_subjects:
             for subject_code, count in daily_subjects[day].items():
+                # Check if the subject is a lab
+                is_lab = any(
+                    individual[day][slot] and individual[day][slot].get('type') == 'lab' and
+                    individual[day][slot].get('subject_code') == subject_code
+                    for slot in range(6)
+                )
+                # For labs, a count of 2 is okay. For theory, only 1.
+                if is_lab and count > 2:
+                    fitness -= (count - 2) * 50 # Penalty for more than one lab session of same subject
+                elif not is_lab and count > 1:
+                    fitness -= (count - 1) * 75 # Penalty for repeated theory subject
                 if count > 2:  # Only labs should have 2 continuous slots
                     fitness -= (count - 2) * 100
                 elif count > 1 and not any(individual[day][slot] and 
@@ -273,11 +321,21 @@ class SupabaseTimetableGA:
                                          for slot in range(6)):
                     # Theory subject repeated on same day
                     fitness -= (count - 1) * 75
-        
+
+        # New Constraint: Subject should not repeat at the same period across all days
+        period_subjects = {slot_id: set() for slot_id in range(6)}
+        for day in individual:
+            for slot_id, entry in individual[day].items():
+                if entry:
+                    subject_code = entry['subject_code']
+                    if subject_code in period_subjects[slot_id]:
+                        fitness -= 20 # Penalty for subject repeating at the same time
+                    period_subjects[slot_id].add(subject_code)
+
         # Strict weekly hours validation (critical constraint)
         section_assignments = self.load_section_assignments(section_data)
         if section_assignments:
-            department = getattr(self, '_current_department', None)
+            department = getattr(self, '_current_department', None) # Get department from context
             subject_hours = self.get_subject_hours_from_db(department, list(section_assignments.keys()))
             for subject_code, expected_hours in subject_hours.items():
                 actual_hours = weekly_subject_count.get(subject_code, 0)
@@ -285,16 +343,22 @@ class SupabaseTimetableGA:
                 if actual_hours == expected:
                     fitness += 50  # Bonus for exact match
                 else:
-                    fitness -= abs(actual_hours - expected) * 100  # Heavy penalty for mismatch
+                    fitness -= abs(actual_hours - expected) * 150  # Increased penalty for mismatch
         
         # Friday last period must be free (institutional rule)
         if individual.get('Friday', {}).get(5) is not None:
             fitness -= 100  # Heavy penalty for using Friday last period
         
-        # Bonus for other free last periods
-        other_days_free = sum(1 for day in ['Tuesday', 'Wednesday', 'Thursday', 'Saturday'] 
-                             if not individual.get(day, {}).get(5))
-        fitness += other_days_free * 5
+        # Bonus for faculty free periods at the end of the day
+        for faculty in faculty_slots:
+            for day in self.days:
+                last_period_worked = -1
+                for slot_id in range(6):
+                    key = f"{day}-{slot_id}"
+                    if key in faculty_slots[faculty]:
+                        last_period_worked = slot_id
+                if last_period_worked != -1 and last_period_worked < 5:
+                    fitness += (5 - last_period_worked) * 2 # Bonus for finishing early
         
         # Daily workload balance
         daily_counts = {day: len([slot for slot in individual[day] if individual[day][slot]]) for day in individual}
@@ -367,30 +431,27 @@ class SupabaseTimetableGA:
         
         return child
 
-    def mutate(self, individual: Dict, subjects: List[Dict], section: str, existing_timetables: List[Dict], section_data: Dict) -> Dict:
+    def mutate(self, individual: Dict, subjects: List[Dict], section: str, existing_timetables: List[Dict], section_data: List[Dict]) -> Dict:
         """Mutate individual randomly"""
-        mutated = json.loads(json.dumps(individual))
-        section_assignments = self.load_section_assignments(section_data)
-        
-        for day in self.days:
-            for slot_id in range(6):
-                if random.random() < self.mutation_rate:
-                    if random.random() < 0.6 and section_assignments:
-                        subject_code = random.choice(list(section_assignments.keys()))
-                        faculty_name = section_assignments[subject_code]
-                        
-                        if not self.check_faculty_conflict(faculty_name, day, slot_id, existing_timetables):
-                            mutated[day][slot_id] = {
-                                'subject_code': subject_code, 'subject_name': subject_code,
-                                'faculty_name': faculty_name, 'section': section,
-                                'room': f"Room-{random.randint(101, 120)}"
-                            }
-                    else:
-                        mutated[day][slot_id] = None
-        
-        return mutated
+        if random.random() < self.mutation_rate:
+            mutated = json.loads(json.dumps(individual))
 
-    def evolve_section(self, department: str, section: str, section_data: Dict) -> Dict:
+            # Select two random, different slots to swap
+            day1, day2 = random.choices(self.days, k=2)
+            slot1, slot2 = random.choices(range(6), k=2)
+
+            # Ensure they are different slots if on the same day
+            if day1 == day2 and slot1 == slot2:
+                return individual # No change
+
+            # Perform the swap
+            temp = mutated[day1][slot1]
+            mutated[day1][slot1] = mutated[day2][slot2]
+            mutated[day2][slot2] = temp
+            return mutated
+        return individual
+
+    def evolve_section(self, department: str, section: str, section_data: List[Dict]) -> Dict:
         """Evolve timetable for a specific section"""
         print(f"Generating timetable for {department} {section}...", file=sys.stderr)
         
@@ -405,15 +466,17 @@ class SupabaseTimetableGA:
         
         # Create initial population
         population = []
+        # CRITICAL FIX: The section_data IS the assignments_list.
+        assignments_list = section_data if isinstance(section_data, list) else []
         for _ in range(self.population_size):
-            individual = self.create_individual(subjects, section, existing_timetables, section_data)
+            individual = self.create_individual(assignments_list, section, existing_timetables)
             population.append(individual)
         
         best_fitness = 0
         best_individual = None
         
         for generation in range(self.generations):
-            # Calculate fitness
+            # Calculate fitness for each individual in the population
             fitness_scores = []
             for individual in population:
                 fitness = self.calculate_fitness(individual, existing_timetables, section_data)
@@ -443,7 +506,7 @@ class SupabaseTimetableGA:
                 else:
                     child = json.loads(json.dumps(parent1))
                 
-                child = self.mutate(child, subjects, section, existing_timetables, section_data)
+                child = self.mutate(child, assignments_list, section, existing_timetables, section_data)
                 new_population.append(child)
             
             population = new_population
@@ -493,7 +556,7 @@ class SupabaseTimetableGA:
         except Exception as e:
             print(f"Error saving timetable: {e}", file=sys.stderr)
 
-    def validate_timetable(self, timetable: Dict, section_data: Dict) -> bool:
+    def validate_timetable(self, timetable: Dict, section_data: List[Dict]) -> bool:
         """Validate final timetable meets all requirements"""
         section_assignments = self.load_section_assignments(section_data)
         if not section_assignments:
@@ -501,7 +564,7 @@ class SupabaseTimetableGA:
         
         # Get department from current context
         department = getattr(self, '_current_department', None)
-        subject_hours = self.get_subject_hours_from_db(department, list(section_assignments.keys()))
+        subject_hours_info = self.get_subject_hours_from_db(department, [a['subject'] for a in section_data])
         weekly_count = {}
         
         # Count actual weekly hours
@@ -513,8 +576,9 @@ class SupabaseTimetableGA:
                     weekly_count[subject] = weekly_count.get(subject, 0) + 1
         
         # Validate weekly hours exactly match database requirements
-        for subject, expected_info in subject_hours.items():
-            expected_hours = int(expected_info.get('weekly_hours', 3))
+        for assignment in section_data:
+            subject = assignment['subject']
+            expected_hours = int(subject_hours_info.get(subject, {}).get('weekly_hours', 3))
             actual_hours = weekly_count.get(subject, 0)
             if actual_hours != expected_hours:
                 print(f"Validation failed: {subject} has {actual_hours} hours, expected {expected_hours}", file=sys.stderr)
@@ -530,51 +594,3 @@ class SupabaseTimetableGA:
                         return False
         
         return True
-
-def main():
-    try:
-        input_data = json.loads(sys.stdin.read())
-        
-        ga = SupabaseTimetableGA()
-        results = {}
-        
-        for section_data in input_data.get('sections', []):
-            section_name = section_data.get('name', 'A')
-            assignments = section_data.get('subjects', {})
-            
-            # Convert assignments to the format expected by the GA
-            section_assignments = {subject: info['faculty'] if isinstance(info, dict) else info for subject, info in assignments.items()}
-            
-            print(f"Processing section {section_name} with {len(section_assignments)} subjects", file=sys.stderr)
-            
-            department = input_data.get('department', 'ISE')
-            
-            # Generate timetable with validation
-            max_attempts = 3
-            timetable = {}  # ensure timetable is always defined
-            for attempt in range(max_attempts):
-                timetable = ga.evolve_section(department, section_name, {'subjects': section_assignments})
-                
-                if ga.validate_timetable(timetable, {'subjects': section_assignments}):
-                    print(f"Valid timetable generated for {section_name} on attempt {attempt + 1}", file=sys.stderr)
-                    break
-                elif attempt == max_attempts - 1:
-                    print(f"Warning: Could not generate fully valid timetable for {section_name}", file=sys.stderr)
-            
-            # Save to Supabase only if we have a timetable
-            if timetable:
-                ga.save_to_supabase(timetable, section_name, department)
-            else:
-                print(f"No timetable to save for {section_name}", file=sys.stderr)
-            
-            results[section_name] = timetable
-        
-        # Output result
-        print(json.dumps(results))
-        
-    except Exception as e:
-        print(json.dumps({"error": str(e)}), file=sys.stderr)
-        sys.exit(1)
-
-if __name__ == "__main__":
-    main()

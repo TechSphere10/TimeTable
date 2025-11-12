@@ -584,6 +584,8 @@ function renderTable(){
     const credits = typeof sub === 'object' ? (sub.credits || 1) : 1;
     const type = typeof sub === 'object' ? (sub.type || 'theory') : 'theory';
     const weeklyHours = typeof sub === 'object' ? (sub.weekly_hours || 3) : 3;
+    const isCrossDept = typeof sub === 'object' ? (sub.is_cross_dept || false) : false;
+    const teachingDept = typeof sub === 'object' ? (sub.teaching_dept || '') : '';
     
     tr.innerHTML = `
       <td><input type="checkbox" class="subject-checkbox" data-i="${i}"></td>
@@ -591,7 +593,7 @@ function renderTable(){
       <td>${name}</td>
       <td>${credits}</td>
       <td><span style="background:var(--info);color:white;padding:2px 6px;border-radius:4px;font-size:11px;">${type}</span></td>
-      <td>${weeklyHours}h</td>
+      <td>${weeklyHours}h ${isCrossDept ? `<span style="color:#f97316;font-weight:bold;">(${teachingDept})</span>` : ''}</td>
       <td class="actions">
         <button class="editBtn" data-i="${i}">Edit</button>
         <button class="delBtn" data-i="${i}">Delete</button>
@@ -769,6 +771,11 @@ addBtn.onclick = async () => {
       showToast("Please select a teaching department for the cross-department subject.", "#dc3545");
       return;
   }
+  
+  if (isCrossDept && !teachingDept) {
+      showToast("Please select a teaching department for the cross-department subject.", "#dc3545");
+      return;
+  }
 
   try {
     // Add directly to Supabase
@@ -904,7 +911,9 @@ async function loadFromSupabase(){
           type: subject.type,
           weekly_hours: subject.weekly_hours,
           is_cross_dept: subject.is_cross_dept,
-          teaching_dept: subject.teaching_dept
+          teaching_dept: subject.teaching_dept,
+          // Add other fields from subject if needed
+          ...subject 
         });
       });
     }
@@ -931,25 +940,25 @@ async function loadFromSupabase(){
 
 // Save database
 saveBtn.onclick = async () => {
-  currentAcademicYear = academicYearInput.value.trim();
-  if(!currentAcademicYear){ showToast("Enter Academic Year","#dc3545"); return; }
-  if(!currentYear || !currentSemester){ showToast("Select Year & Semester","#dc3545"); return; }
-  
-  // Update currentSubjects from local storage
-  if(subjectsData[currentAcademicYear] && 
-     subjectsData[currentAcademicYear][currentYear] && 
-     subjectsData[currentAcademicYear][currentYear][currentSemester]){
-    currentSubjects = subjectsData[currentAcademicYear][currentYear][currentSemester];
-  }
-  
-  if(currentSubjects.length === 0){ showToast("No subjects to save. Add subjects first.","#dc3545"); return; }
-  
-  try {
-    await saveToSupabase();
-    showToast(`✅ ${currentSubjects.length} subjects saved to database for ${currentDepartment}`,"#22c55e");
-  } catch (error) {
-    showToast("❌ Error: " + error.message, "#ef4444");
-  }
+    currentAcademicYear = academicYearInput.value.trim();
+    if (!currentAcademicYear) { showToast("Enter Academic Year", "#dc3545"); return; }
+    if (!currentYear || !currentSemester) { showToast("Select Year & Semester", "#dc3545"); return; }
+
+    // Ensure currentSubjects is up-to-date from the UI/local state
+    if (subjectsData[currentAcademicYear]?.[currentYear]?.[currentSemester]) {
+        currentSubjects = subjectsData[currentAcademicYear][currentYear][currentSemester];
+    } else {
+        currentSubjects = [];
+    }
+
+    if (currentSubjects.length === 0) { showToast("No subjects to save for the current selection.", "#dc3545"); return; }
+
+    try {
+        await saveToSupabase();
+        showToast(`✅ ${currentSubjects.length} subjects for Sem ${currentSemester} saved to database!`, "#22c55e");
+    } catch (error) {
+        showToast(`❌ Save Error: ${error.message}`, "#ef4444");
+    }
 };
 
 // Clear all data
@@ -1056,7 +1065,7 @@ viewDbBtn.onclick = async () => {
                         <div style="font-weight: 600; color: #333; font-size: 14px; margin-top: 2px;">${name}</div>
                         <div style="font-size: 12px; color: #666;">${credits} Credits • ${hours}h/week</div>
                       </div>
-                      <span style="background: var(--info); color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px; text-transform: uppercase;">${type}</span>
+                      <span style="background: var(--info); color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px; text-transform: uppercase;">${type} ${sub.is_cross_dept ? `(${sub.teaching_dept})` : ''}</span>
                     </div>
                   `;
                 }).join('')}

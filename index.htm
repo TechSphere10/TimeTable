@@ -267,14 +267,14 @@
 <body>
   <!-- Header -->
   <div class="header">
-    <img src="left-logo.png" alt="MET Logo" style="width: 100px; height: 100%; object-fit: contain;">
+    <img src="left-logo.png" alt="MET Logo">
     <div class="header-text">
       <h1 class="green">Maharaja Education Trust (R), Mysuru</h1>
       <h1 class="orange">Maharaja Institute of Technology, Mysore</h1>
       <h1 class="green">An Autonomous Institution Affiliated to VTU, Belagavi</h1>
       <h1 class="orange">Approved by AICTE, New Delhi | Recognized by Government of Karnataka</h1>
     </div>
-    <img src="right-logo.png" alt="Circle Logo" style="width: 100px; height: 100%; object-fit: contain;">
+    <img src="right-logo.png" alt="Circle Logo">
   </div>
 
   <!-- Login / Register Container -->
@@ -349,7 +349,13 @@
     </form>
   </div>
 
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script>
+    // Supabase client initialization
+    const SUPABASE_URL = 'https://bkmzyhroignpjebfpqug.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrbXp5aHJvaWducGplYmZwcXVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0MjA1NDUsImV4cCI6MjA3Mjk5NjU0NX0.ICE2eYzFZvz0dtNpAa5YlJTZD-idc2J76wn1ZeHwwck';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
     const loginForm = document.getElementById("loginForm");
     const registerForm = document.getElementById("registerForm");
     const passwordError = document.getElementById("passwordError");
@@ -359,9 +365,6 @@
     const deptSelect = document.getElementById("dept");
     const regDeptSelect = document.getElementById("regDept");
 
-    let users = JSON.parse(localStorage.getItem('registeredUsers')) || {}; // load from localStorage or empty object
-
-    // Toggle between forms
     function toggleForms() {
       if (loginForm.style.display === "none") {
         loginForm.reset();
@@ -377,17 +380,13 @@
       registerInfo.style.display = "none";
     }
 
-    // Password validation
     function isValidPassword(password) {
       const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
       return regex.test(password);
     }
 
-    // Registration validation
-    registerForm.addEventListener("submit", function(e) {
+    registerForm.addEventListener("submit", async function(e) {
       e.preventDefault();
-      // Ensure 'users' is up-to-date before processing
-      users = JSON.parse(localStorage.getItem('registeredUsers')) || {};
 
       const dept = regDeptSelect.value;
       const recruiter = document.getElementById("recruiter").value;
@@ -395,49 +394,71 @@
 
       if (!isValidPassword(regPassword)) {
         passwordError.style.display = "block";
-      } else {
-        passwordError.style.display = "none";
-        users[dept] = { password: regPassword, recruiter: recruiter }; // store user
-        localStorage.setItem('registeredUsers', JSON.stringify(users)); // save to localStorage
-        registerInfo.style.display = "block";
-        setTimeout(() => {
-          loginForm.reset(); // clear fields for fresh login
-          deptSelect.value = ""; 
-          toggleForms();
-        }, 1500);
+        return;
+      }
+      
+      passwordError.style.display = "none";
+
+      try {
+        const { error } = await supabase
+          .from('users')
+          .insert([{ department: dept, recruiter_name: recruiter, password: regPassword }]);
+
+        if (error) {
+          if (error.message.includes('duplicate key value violates unique constraint')) {
+            passwordError.textContent = "This department is already registered.";
+          } else {
+            passwordError.textContent = `Registration failed: ${error.message}`;
+          }
+          passwordError.style.display = "block";
+        } else {
+          registerInfo.style.display = "block";
+          setTimeout(() => {
+            toggleForms();
+          }, 1500);
+        }
+      } catch (err) {
+        passwordError.textContent = "An error occurred during registration.";
+        passwordError.style.display = "block";
+        console.error("Registration Error:", err);
       }
     });
 
-    // Login validation
-    loginForm.addEventListener("submit", function(e) {
-      e.preventDefault();
-      // Ensure 'users' is up-to-date before processing
-      users = JSON.parse(localStorage.getItem('registeredUsers')) || {};
+    loginForm.addEventListener("submit", async function(e) {
+        e.preventDefault();
+        const dept = deptSelect.value;
+        const pass = document.getElementById("password").value;
 
-      const dept = deptSelect.value;
-      const pass = document.getElementById("password").value;
+        if (!dept) {
+            loginError.textContent = "Please select a department.";
+            loginError.style.display = "block";
+            return;
+        }
 
-      if (!users[dept]) {
-        loginError.textContent = "Not registered. Redirecting to register...";
-        loginError.style.display = "block";
-        setTimeout(() => {
-          regDeptSelect.value = dept;
-          toggleForms();
-        }, 1500);
-      } else if (users[dept].password !== pass) {
-        loginError.textContent = "Wrong password. Redirecting to create new password...";
-        loginError.style.display = "block";
-        setTimeout(() => {
-          regDeptSelect.value = dept;
-          toggleForms();
-        }, 1500);
-      } else {
-        loginError.style.display = "none";
-        // Store department in localStorage for use across pages
-        localStorage.setItem('currentDepartment', dept);
-        alert("Login successful! Welcome " + users[dept].recruiter + " from " + dept + " Department.");
-        window.location.href = `page.htm?dept=${encodeURIComponent(dept)}`;
-      }
+        try {
+            const { data, error } = await supabase
+                .from('users')
+                .select('recruiter_name, password')
+                .eq('department', dept)
+                .single();
+
+            if (error || !data) {
+                loginError.textContent = "Department not registered. Please register first.";
+                loginError.style.display = "block";
+            } else if (data.password !== pass) {
+                loginError.textContent = "Incorrect password. Please try again.";
+                loginError.style.display = "block";
+            } else {
+                loginError.style.display = "none";
+                localStorage.setItem('currentDepartment', dept);
+                alert("Login successful! Welcome " + data.recruiter_name + " from " + dept + " Department.");
+                window.location.href = `page.htm?dept=${encodeURIComponent(dept)}`;
+            }
+        } catch (err) {
+            loginError.textContent = "An error occurred during login. Please try again.";
+            loginError.style.display = "block";
+            console.error("Login Error:", err);
+        }
     });
   </script>
 </body>

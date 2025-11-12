@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Timetable Analytics</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary: #004085;
+            --light-grey: #f8f9fa;
+            --border: #dee2e6;
+            --text: #1e3c72;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding-top: 100px;
+            margin: 0;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between; 
+            padding: 5px 20px;
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: white;
+            border-bottom: 3px solid #1e40af;
+            box-shadow: 0 4px 20px rgba(30, 64, 175, 0.3);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+        .header img { max-height: 70px; width: auto; border-radius: 50%; }
+        .header-text { text-align: center; flex: 1; }
+        .header-text h1 { margin: 2px 0; font-weight: bold; font-size: 16px; }
+        .container {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .page-header h2 {
+            color: var(--primary);
+            font-size: 28px;
+            margin: 0;
+        }
+        .back-button {
+            padding: 10px 20px;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+        }
+        .card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            padding: 25px;
+        }
+        .card h3 {
+            margin: -25px -25px 20px -25px;
+            padding: 15px 25px;
+            background: var(--light-grey);
+            border-bottom: 1px solid var(--border);
+            border-radius: 15px 15px 0 0;
+            color: var(--primary);
+            font-size: 18px;
+        }
+        .stat-list { list-style: none; padding: 0; }
+        .stat-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .stat-list li:last-child { border-bottom: none; }
+        .stat-list .name { font-weight: 600; color: var(--text); }
+        .stat-list .value { font-weight: bold; font-size: 16px; }
+        .workload-bar-container {
+            width: 120px;
+            height: 12px;
+            background-color: #e9ecef;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .workload-bar {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 0.5s ease;
+        }
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            color: white;
+            width: 80px;
+            text-align: center;
+        }
+        .status-underloaded { background-color: var(--warning); color: var(--text); }
+        .status-balanced { background-color: var(--success); }
+        .status-overloaded { background-color: var(--danger); }
+        #loading { text-align: center; font-size: 18px; color: var(--primary); padding: 50px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo-left"><img src="left-logo.png" alt="MET Logo"></div>
+        <div class="header-text">
+            <h1 style="color:white;">🎓 Maharaja Education Trust (R), Mysuru</h1>
+            <h1 style="color:white;">🏛️ Maharaja Institute of Technology, Mysore</h1>
+        </div>
+        <div class="logo-right"><img src="right-logo.png" alt="Circle Logo"></div>
+    </div>
+
+    <div class="container">
+        <div class="page-header">
+            <h2 id="dashboardTitle">Department Dashboard</h2>
+            <a href="javascript:history.back()" class="back-button">← Back</a>
+        </div>
+
+        <div id="loading">Loading dashboard data...</div>
+
+        <div class="dashboard-grid" id="dashboardContent" style="display: none;">
+            <div class="card">
+                <h3>👨‍🏫 Faculty Workload (Weekly Hours)</h3>
+                <ul class="stat-list" id="facultyWorkloadList"></ul>
+            </div>
+            <div class="card">
+                <h3>🚪 Room Utilization (Weekly Hours)</h3>
+                <ul class="stat-list" id="roomUtilizationList"></ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://bkmzyhroignpjebfpqug.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrbXp5aHJvaWducGplYmZwcXVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0MjA1NDUsImV4cCI6MjA3Mjk5NjU0NX0.ICE2eYzFZvz0dtNpAa5YlJTZD-idc2J76wn1ZeHwwck';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const NORMAL_WORKLOAD = 16; // Example: 16 hours is a balanced weekly workload
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const currentDepartment = urlParams.get('dept') || localStorage.getItem('currentDepartment');
+
+            if (currentDepartment) {
+                document.getElementById('dashboardTitle').textContent = `${currentDepartment} Department Dashboard`;
+                await loadDashboardData(currentDepartment);
+            } else {
+                document.getElementById('loading').textContent = 'No department selected. Please go back and select a department.';
+            }
+        });
+
+        async function loadDashboardData(department) {
+            const loadingEl = document.getElementById('loading');
+            const contentEl = document.getElementById('dashboardContent');
+
+            try {
+                const { data: timetableData, error } = await supabase
+                    .from('timetables')
+                    .select('faculty_name, room')
+                    .eq('department', department);
+
+                if (error) throw error;
+
+                if (!timetableData || timetableData.length === 0) {
+                    loadingEl.textContent = 'No timetable data found for this department. Please generate a timetable first.';
+                    return;
+                }
+
+                // Calculate stats
+                const facultyWorkload = calculateWorkload(timetableData, 'faculty_name');
+                const roomUtilization = calculateWorkload(timetableData, 'room');
+
+                // Render stats
+                renderFacultyWorkload(facultyWorkload);
+                renderRoomUtilization(roomUtilization);
+
+                loadingEl.style.display = 'none';
+                contentEl.style.display = 'grid';
+
+            } catch (err) {
+                loadingEl.textContent = `Error loading dashboard: ${err.message}`;
+                console.error(err);
+            }
+        }
+
+        function calculateWorkload(data, key) {
+            const workload = {};
+            data.forEach(item => {
+                const name = item[key];
+                if (name) {
+                    workload[name] = (workload[name] || 0) + 1;
+                }
+            });
+            return workload;
+        }
+
+        function renderFacultyWorkload(workload) {
+            const list = document.getElementById('facultyWorkloadList');
+            list.innerHTML = '';
+
+            const sortedFaculty = Object.entries(workload).sort(([, a], [, b]) => b - a);
+
+            sortedFaculty.forEach(([name, hours]) => {
+                const li = document.createElement('li');
+                
+                let statusClass, statusText;
+                if (hours < NORMAL_WORKLOAD - 4) {
+                    statusClass = 'status-underloaded';
+                    statusText = 'Underloaded';
+                } else if (hours > NORMAL_WORKLOAD + 2) {
+                    statusClass = 'status-overloaded';
+                    statusText = 'Overloaded';
+                } else {
+                    statusClass = 'status-balanced';
+                    statusText = 'Balanced';
+                }
+
+                const percentage = Math.min((hours / (NORMAL_WORKLOAD + 4)) * 100, 100);
+
+                li.innerHTML = `
+                    <span class="name">${name}</span>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <span class="status-badge ${statusClass}">${statusText}</span>
+                        <div class="workload-bar-container" title="${hours} hours">
+                            <div class="workload-bar ${statusClass}" style="width: ${percentage}%;"></div>
+                        </div>
+                        <span class="value">${hours}h</span>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        function renderRoomUtilization(utilization) {
+            const list = document.getElementById('roomUtilizationList');
+            list.innerHTML = '';
+
+            const sortedRooms = Object.entries(utilization).sort(([, a], [, b]) => b - a);
+
+            sortedRooms.forEach(([name, hours]) => {
+                const li = document.createElement('li');
+                const maxHours = 30; // 5 days * 6 periods
+                const percentage = Math.min((hours / maxHours) * 100, 100);
+
+                let barColor;
+                if (percentage < 30) barColor = 'var(--warning)';
+                else if (percentage > 85) barColor = 'var(--danger)';
+                else barColor = 'var(--success)';
+
+                li.innerHTML = `
+                    <span class="name">${name}</span>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div class="workload-bar-container" title="${hours} hours">
+                            <div class="workload-bar" style="width: ${percentage}%; background-color: ${barColor};"></div>
+                        </div>
+                        <span class="value">${hours}h</span>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+        }
+    </script>
+</body>
+</html>

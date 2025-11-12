@@ -214,6 +214,8 @@ section h2 {
 .editBtn:hover { background: #2563eb; transform: scale(1.05); }
 .delBtn { background: #ef4444; color: white; transition: all 0.2s ease; }
 .delBtn:hover { background: #dc2626; transform: scale(1.05); }
+.viewBtn { background: #17a2b8; color: white; transition: all 0.2s ease; }
+.viewBtn:hover { background: #117a8b; transform: scale(1.05); }
 
 .designation-badge {
   padding: 4px 10px;
@@ -462,6 +464,7 @@ function renderTable() {
       <td class="actions">
         <button class="editBtn" data-id="${faculty.id}">Edit</button>
         <button class="delBtn" data-id="${faculty.id}">Delete</button>
+        <button class="viewBtn" data-name="${escapeHtml(faculty.name)}">View Timetable</button>
       </td>
     `;
     facultyTable.appendChild(tr);
@@ -565,6 +568,13 @@ function attachRowEvents() {
       }
     };
   });
+
+  document.querySelectorAll('.viewBtn').forEach(btn => {
+    btn.onclick = () => {
+        const facultyName = btn.dataset.name;
+        window.location.href = `faculty_view.htm?faculty=${encodeURIComponent(facultyName)}`;
+    };
+  });
 }
 
 // Add faculty
@@ -633,12 +643,32 @@ addBtn.onclick = async () => {
 
 // Save database
 saveBtn.onclick = async () => {
-  if(facultyData.length === 0){ 
-    showToast("No faculty data to save","#dc3545"); 
-    return; 
-  }
-  
-  showToast(`Faculty database saved successfully for ${currentDepartment}`,"#28a745");
+    if (facultyData.length === 0) {
+        showToast("No faculty data to save.", "#dc3545");
+        return;
+    }
+
+    try {
+        showToast("💾 Saving to database...", "#17a2b8");
+
+        // Upsert operation: inserts new faculty and updates existing ones based on name and department
+        const { error } = await supabase
+            .from('faculty')
+            .upsert(facultyData, { onConflict: 'department, name' });
+
+        if (error) {
+            // Check for specific unique constraint errors if needed
+            if (error.message.includes('unique_faculty_initials_per_dept')) {
+                throw new Error("Duplicate initials found. Please ensure all faculty have unique initials.");
+            }
+            throw error;
+        }
+
+        showToast(`✅ Faculty database saved successfully for ${currentDepartment}`, "#28a745");
+    } catch (error) {
+        console.error('Error saving faculty data:', error);
+        showToast(`❌ Save failed: ${error.message}`, "#dc3545");
+    }
 };
 
 // Clear all faculty
@@ -664,18 +694,22 @@ clearBtn.onclick = async () => {
 
 // View all faculty
 viewDbBtn.onclick = async () => {
-  dbContent.innerHTML = '<div style="text-align:center;padding:20px;">Loading data...</div>';
-  
+  dbContent.innerHTML = '<div style="text-align:center;padding:20px;">Loading all faculty data...</div>';
+
   try {
-    // Load fresh data from Supabase
-    await loadFacultyData();
-    
+    // Fetch fresh data for the "View All" modal
+    const { data: allFaculty, error } = await supabase.from('faculty').select('*').order('department').order('name');
+    if (error) throw error;
+
+    // This is the data for the modal, not the main page list
+    const allFacultyDataForView = allFaculty || [];
+
     dbContent.innerHTML = '';
     
-    if(facultyData.length === 0){
+    if (allFacultyDataForView.length === 0) {
       dbContent.innerHTML = `
         <div style="text-align:center;padding:60px 20px;">
-          <div style="font-size:48px;margin-bottom:20px;opacity:0.3;">👥</div>
+          <div style="font-size:48px;margin-bottom:20px;opacity:0.3;">👨‍🏫</div>
           <h3 style="color:var(--primary);margin-bottom:10px;">No Faculty Database Found</h3>
           <p style="color:#666;font-size:16px;margin-bottom:30px;">Start by adding faculty members to build your database.</p>
           <div style="background:linear-gradient(135deg,#f8fafc 0%,#e9ecef 100%);padding:20px;border-radius:12px;border:2px dashed #ddd;">
@@ -686,6 +720,15 @@ viewDbBtn.onclick = async () => {
       dbOverlay.style.display = 'block';
       return;
     }
+
+    // Group all faculty by department
+    const groupedByDept = {};
+    allFacultyDataForView.forEach(faculty => {
+        if (!groupedByDept[faculty.department]) {
+            groupedByDept[faculty.department] = [];
+        }
+        groupedByDept[faculty.department].push(faculty);
+    });
 
     // Create department card
     const deptCard = document.createElement('div');
@@ -698,65 +741,62 @@ viewDbBtn.onclick = async () => {
       border: 2px solid rgba(0,64,133,0.1);
       transition: all 0.3s ease;
     `;
-    
-    deptCard.innerHTML = `
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-        <h2 style="color: var(--primary); margin: 0; font-size: 24px; font-weight: 700;">👥 ${currentDepartment} Faculty</h2>
-        <span style="background: var(--primary); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 600;">${facultyData.length} Members</span>
-      </div>
-    `;
-    
-    const facultyContainer = document.createElement('div');
-    facultyContainer.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;';
-    
-    // Group faculty by designation
-    const groupedFaculty = {};
-    facultyData.forEach(faculty => {
-      const designation = faculty.designation;
-      if (!groupedFaculty[designation]) {
-        groupedFaculty[designation] = [];
-      }
-      groupedFaculty[designation].push(faculty);
-    });
-    
-    // Create cards for each designation group
-    for(const [designation, members] of Object.entries(groupedFaculty)) {
-      const designationCard = document.createElement('div');
-      designationCard.style.cssText = `
-        background: white;
-        border-radius: 12px;
-        padding: 20px;
-        border: 1px solid rgba(0,64,133,0.15);
-        box-shadow: 0 4px 12px rgba(0,64,133,0.08);
-        transition: all 0.3s ease;
-      `;
-      
-      const designationClass = `designation-${designation.split('_')[0]}`;
-      
-      designationCard.innerHTML = `
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
-          <h3 style="color: var(--primary); margin: 0; font-size: 18px;">${designation.replace('_', ' ').toUpperCase()}</h3>
-          <span style="background: var(--info); color: white; padding: 4px 12px; border-radius: 15px; font-size: 12px; font-weight: 600;">${members.length} Members</span>
+
+    for (const [dept, members] of Object.entries(groupedByDept)) {
+        const deptContainer = document.createElement('div');
+        deptContainer.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+            <h2 style="color: var(--primary); margin: 0; font-size: 24px; font-weight: 700;">👥 ${dept} Faculty</h2>
+            <span style="background: var(--primary); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 600;">${members.length} Members</span>
         </div>
-        <div style="max-height: 200px; overflow-y: auto; margin-bottom: 15px;">
-          ${members.map(faculty => {
-            return `
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
-                <div>
-                  <div style="font-weight: 600; color: var(--primary); font-size: 14px;">${escapeHtml(faculty.name)}</div>
-                  <div style="font-size: 12px; color: #666;">${escapeHtml(faculty.initials)}</div>
-                </div>
-                <span class="designation-badge ${designationClass}">${designation.replace('_', ' ')}</span>
-              </div>
+        `;
+
+        const facultyContainer = document.createElement('div');
+        facultyContainer.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;';
+        
+        // Group faculty by designation within the department
+        const groupedByDesignation = {};
+        members.forEach(faculty => {
+            const designation = faculty.designation;
+            if (!groupedByDesignation[designation]) {
+                groupedByDesignation[designation] = [];
+            }
+            groupedByDesignation[designation].push(faculty);
+        });
+
+        for(const [designation, designationMembers] of Object.entries(groupedByDesignation)) {
+            const designationCard = document.createElement('div');
+            designationCard.style.cssText = `
+                background: white; border-radius: 12px; padding: 20px;
+                border: 1px solid rgba(0,64,133,0.15); box-shadow: 0 4px 12px rgba(0,64,133,0.08);
             `;
-          }).join('')}
-        </div>
-      `;
-      
-      facultyContainer.appendChild(designationCard);
+            
+            const designationClass = `designation-${designation.split('_')[0]}`;
+            
+            designationCard.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+                <h3 style="color: var(--primary); margin: 0; font-size: 18px;">${designation.replace('_', ' ').toUpperCase()}</h3>
+                <span style="background: var(--info); color: white; padding: 4px 12px; border-radius: 15px; font-size: 12px; font-weight: 600;">${designationMembers.length} Members</span>
+                </div>
+                <div style="max-height: 200px; overflow-y: auto; margin-bottom: 15px;">
+                ${designationMembers.map(faculty => `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                    <div>
+                        <div style="font-weight: 600; color: var(--primary); font-size: 14px;">${escapeHtml(faculty.name)}</div>
+                        <div style="font-size: 12px; color: #666;">${escapeHtml(faculty.initials)}</div>
+                    </div>
+                    <span class="designation-badge ${designationClass}">${designation.replace('_', ' ')}</span>
+                    </div>
+                `).join('')}
+                </div>
+            `;
+            facultyContainer.appendChild(designationCard);
+        }
+
+        deptContainer.appendChild(facultyContainer);
+        deptCard.appendChild(deptContainer);
     }
     
-    deptCard.appendChild(facultyContainer);
     dbContent.appendChild(deptCard);
     
   } catch (error) {
@@ -788,7 +828,18 @@ function escapeHtml(txt) {
 }
 
 // Initialize
-loadFacultyData();
+let allFacultyData = [];
+async function initializePage() {
+    try {
+        await loadFacultyData(); // Loads faculty for the current department
+        const { data, error } = await supabase.from('faculty').select('*'); // Load all faculty for viewing
+        if (error) throw error;
+        allFacultyData = data || [];
+    } catch (error) {
+        console.error('Initialization failed:', error);
+    }
+}
+initializePage();
 </script>
 </body>
 </html>
