@@ -1,0 +1,126 @@
+╔══════════════════════════════════════════════════════════════════╗
+║              MIT MYSORE TIMETABLE SYSTEM                         ║
+║                   QUICK START GUIDE                              ║
+╚══════════════════════════════════════════════════════════════════╝
+
+🚀 3-MINUTE SETUP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. CONFIGURE (1 minute)
+   ────────────────────
+   Open config.js and add your Supabase credentials:
+   
+   const SUPABASE_URL = 'your-url-here';
+   const SUPABASE_ANON_KEY = 'your-key-here';
+
+2. SETUP DATABASE (1 minute)
+   ─────────────────────────
+   - Go to Supabase SQL Editor
+   - Run complete_database_setup.sql
+   - Done!
+
+3. LAUNCH (1 second)
+   ─────────────────
+   Double-click START.bat
+
+✅ THAT'S IT! System is ready to use!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 FIRST TIME WORKFLOW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Step 1: Add Subjects (5 minutes)
+  → Click "Subject Management"
+  → Add all your subjects
+  → Include: Code, Name, Credits, Type, Hours
+
+Step 2: Add Faculty (3 minutes)
+  → Click "Faculty Management"
+  → Add all faculty members
+  → Include: Name, Initials, Department
+
+Step 3: Generate Timetable (2 minutes)
+  → Click "Timetable Generator"
+  → Select Year, Semester, Sections
+  → Load Subjects
+  → Assign Faculty
+  → Click "Generate Timetable"
+  → Wait 30-60 seconds
+
+Step 4: Review & Export (1 minute)
+  → Review generated timetable
+  → Use Smart Swap if needed
+  → Export PDF
+  → Save to database
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 KEY FEATURES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✓ Generate Timetable    - AI-powered generation (30-60s)
+✓ Smart Swap           - Swap periods without clashes
+✓ Export PDF           - Download professional PDF
+✓ Save to Database     - Store in cloud
+✓ Finalize & Lock      - Prevent further changes
+✓ View Dashboard       - Faculty workload analytics
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚡ QUICK TIPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💡 Generation takes 30-60 seconds - be patient!
+💡 Use Chrome browser for best experience
+💡 Smart Swap shows safe options in GREEN
+💡 Always save before finalizing
+💡 Export PDF for backup
+💡 Check browser console (F12) if issues occur
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔧 TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Problem: Not generating
+Fix: Check all subjects have faculty assigned
+
+Problem: Slow generation
+Fix: Close other browser tabs
+
+Problem: PDF not exporting
+Fix: Ensure logos are in folder
+
+Problem: Can't connect
+Fix: Check config.js has correct Supabase credentials
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 DOCUMENTATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+README.md              - System overview
+INSTALLATION_GUIDE.txt - Detailed setup
+SYSTEM_INFO.txt        - Technical details
+CONVERSION_SUMMARY.txt - Python to JS conversion
+QUICK_START.txt        - This file
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎓 REMEMBER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✓ No Python needed
+✓ No server needed
+✓ Just open in browser
+✓ All 10 conditions work
+✓ Smart clash detection
+✓ Professional output
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+╔══════════════════════════════════════════════════════════════════╗
+║                    READY TO USE!                                 ║
+║              Double-click START.bat to begin                     ║
+╚══════════════════════════════════════════════════════════════════╝

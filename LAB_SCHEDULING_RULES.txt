@@ -1,0 +1,227 @@
+╔══════════════════════════════════════════════════════════════════╗
+║              LAB SCHEDULING RULES                                ║
+║              MIT MYSORE TIMETABLE SYSTEM                         ║
+╚══════════════════════════════════════════════════════════════════╝
+
+✅ LAB SCHEDULING RULES IMPLEMENTED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 RULE 1: LABS ARE ALWAYS 2 HOURS CONTINUOUS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Labs MUST be scheduled in continuous 2-hour blocks.
+
+ALLOWED CONTINUOUS SLOTS:
+  ✓ Slot 0-1: 09:00-11:00 (Before Tea Break)
+  ✓ Slot 2-3: 11:15-13:15 (After Tea Break)
+  ✓ Slot 4-5: 14:00-16:00 (After Lunch Break)
+
+NOT ALLOWED:
+  ✗ Slot 1-2: Crosses tea break
+  ✗ Slot 3-4: Crosses lunch break
+  ✗ Any non-continuous slots
+
+PENALTY: -100 points (Hard penalty)
+
+📋 RULE 2: 2-HOUR LAB = 1 SESSION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+If weekly_hours = 2:
+  → 1 session of 2 continuous hours
+  → Scheduled in one of the allowed slots
+  → Can be any day (Tuesday-Saturday)
+
+EXAMPLE:
+  Subject: Data Structures Lab
+  Weekly Hours: 2
+  Schedule: Tuesday 09:00-11:00 (Slot 0-1)
+
+📋 RULE 3: 4-HOUR LAB = 2 SESSIONS ON DIFFERENT DAYS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+If weekly_hours = 4:
+  → 2 sessions of 2 continuous hours each
+  → MUST be on different days
+  → Each session in allowed continuous slots
+
+EXAMPLE:
+  Subject: Web Technology Lab
+  Weekly Hours: 4
+  Schedule:
+    Session 1: Tuesday 11:15-13:15 (Slot 2-3)
+    Session 2: Thursday 14:00-16:00 (Slot 4-5)
+
+NOT ALLOWED:
+  ✗ Both sessions on same day
+  ✗ Sessions crossing breaks
+
+PENALTY: -100 points (Hard penalty)
+
+📋 RULE 4: 6-HOUR LAB = 3 SESSIONS ON DIFFERENT DAYS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+If weekly_hours = 6:
+  → 3 sessions of 2 continuous hours each
+  → MUST be on different days
+  → Each session in allowed continuous slots
+
+EXAMPLE:
+  Subject: Advanced Programming Lab
+  Weekly Hours: 6
+  Schedule:
+    Session 1: Tuesday 09:00-11:00 (Slot 0-1)
+    Session 2: Wednesday 11:15-13:15 (Slot 2-3)
+    Session 3: Friday 14:00-16:00 (Slot 4-5)
+
+🕐 TIME SLOT STRUCTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SLOT 0: 09:00-10:00  ┐
+SLOT 1: 10:00-11:00  ┘ Continuous Block 1 (Before Tea)
+
+        TEA BREAK (10 minutes)
+
+SLOT 2: 11:15-12:15  ┐
+SLOT 3: 12:15-13:15  ┘ Continuous Block 2 (After Tea)
+
+        LUNCH BREAK (45 minutes)
+
+SLOT 4: 14:00-15:00  ┐
+SLOT 5: 15:00-16:00  ┘ Continuous Block 3 (After Lunch)
+
+✅ EXAMPLES OF VALID LAB SCHEDULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EXAMPLE 1: 2-Hour Lab
+  Subject: Database Lab
+  Weekly Hours: 2
+  Schedule: Wednesday 09:00-11:00
+  Status: ✅ VALID (Continuous, allowed slot)
+
+EXAMPLE 2: 4-Hour Lab
+  Subject: OS Lab
+  Weekly Hours: 4
+  Schedule:
+    - Tuesday 11:15-13:15
+    - Thursday 11:15-13:15
+  Status: ✅ VALID (Both continuous, different days)
+
+EXAMPLE 3: 4-Hour Lab (Alternative)
+  Subject: Network Lab
+  Weekly Hours: 4
+  Schedule:
+    - Tuesday 09:00-11:00
+    - Friday 14:00-16:00
+  Status: ✅ VALID (Both continuous, different days)
+
+❌ EXAMPLES OF INVALID LAB SCHEDULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EXAMPLE 1: Lab Crossing Break
+  Subject: AI Lab
+  Schedule: Tuesday 10:00-12:15 (Slot 1-2)
+  Status: ❌ INVALID (Crosses tea break)
+  Penalty: -100 points
+
+EXAMPLE 2: Same Day Sessions
+  Subject: ML Lab
+  Weekly Hours: 4
+  Schedule:
+    - Tuesday 09:00-11:00
+    - Tuesday 14:00-16:00
+  Status: ❌ INVALID (Both on same day)
+  Penalty: -100 points
+
+EXAMPLE 3: Non-Continuous Slots
+  Subject: Cloud Lab
+  Schedule: Wednesday Slot 0 and Slot 3
+  Status: ❌ INVALID (Not continuous)
+  Penalty: -100 points
+
+🎯 HOW THE SYSTEM ENFORCES THIS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. PERIOD CREATION
+   - Labs are created as 2-hour duration periods
+   - 2hrs = 1 period, 4hrs = 2 periods, 6hrs = 3 periods
+
+2. PLACEMENT
+   - Labs can only be placed in allowed continuous slots
+   - System tries: [0,1], [2,3], [4,5]
+   - Rejects any other combinations
+
+3. FITNESS EVALUATION
+   - Checks if lab is in continuous slots
+   - Checks if multiple sessions are on different days
+   - Applies -100 penalty for violations
+
+4. GENETIC ALGORITHM
+   - Evolves population to avoid penalties
+   - High penalty ensures compliance
+   - Best solution always follows rules
+
+📊 VERIFICATION CHECKLIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+After generation, verify labs:
+
+□ All labs are 2 hours continuous
+□ Labs are in allowed slots (0-1, 2-3, or 4-5)
+□ No labs cross tea break (between slot 1-2)
+□ No labs cross lunch break (between slot 3-4)
+□ 4-hour labs have 2 sessions on different days
+□ 6-hour labs have 3 sessions on different days
+□ Each session is 2 hours continuous
+
+🔍 HOW TO CHECK IN GENERATED TIMETABLE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Look for labs in the timetable:
+  - They should span 2 consecutive slots
+  - They should be in allowed blocks
+  - Multiple sessions should be on different days
+
+VISUAL CHECK:
+  Tuesday    | 09:00-10:00 | 10:00-11:00 | ... | 14:00-15:00 | 15:00-16:00
+  ─────────────────────────────────────────────────────────────────────────
+  Section A  | DB Lab      | DB Lab      | ... | OS Lab      | OS Lab
+             └─────────────┘                   └─────────────┘
+             2hrs continuous                   2hrs continuous
+             ✅ VALID                          ✅ VALID
+
+💡 TIPS FOR USERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. When adding subjects:
+   - Mark type as "Lab" for lab subjects
+   - Set weekly_hours to 2, 4, or 6
+   - System will automatically handle scheduling
+
+2. During generation:
+   - System ensures all rules are followed
+   - High fitness score means rules are met
+   - Low fitness score means violations exist
+
+3. If issues occur:
+   - Check browser console for fitness scores
+   - Regenerate if fitness < 800
+   - Use Smart Swap to fix minor issues
+
+🏆 SUCCESS CRITERIA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Your lab scheduling is CORRECT if:
+
+✅ All labs are 2 hours continuous
+✅ All labs are in allowed slots
+✅ No labs cross breaks
+✅ 4-hour labs on different days
+✅ 6-hour labs on different days
+✅ Fitness score ≥ 850
+✅ No -100 penalties in console
+
+╔══════════════════════════════════════════════════════════════════╗
+║                    LAB RULES IMPLEMENTED!                        ║
+║         2hrs continuous in allowed slots guaranteed!             ║
+║         4hrs = 2 sessions on different days guaranteed!          ║
+╚══════════════════════════════════════════════════════════════════╝

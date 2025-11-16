@@ -143,7 +143,6 @@ class TimetableGA:
         slots2 = list(timetable[day2].keys())
 
         if not slots1 or not slots2:
-        if not slots1 or not slots2 or (day1 == day2 and len(slots1) < 2):
             return timetable # Cannot mutate if a day is empty
 
         slot1 = random.choice(slots1)
