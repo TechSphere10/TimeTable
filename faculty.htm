@@ -730,20 +730,10 @@ viewDbBtn.onclick = async () => {
         groupedByDept[faculty.department].push(faculty);
     });
 
-    // Create department card
-    const deptCard = document.createElement('div');
-    deptCard.style.cssText = `
-      background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%);
-      border-radius: 15px;
-      padding: 25px;
-      margin-bottom: 25px;
-      box-shadow: 0 8px 25px rgba(0,64,133,0.12);
-      border: 2px solid rgba(0,64,133,0.1);
-      transition: all 0.3s ease;
-    `;
-
     for (const [dept, members] of Object.entries(groupedByDept)) {
         const deptContainer = document.createElement('div');
+        deptContainer.style.cssText = `background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%); border-radius: 15px; padding: 25px; margin-bottom: 25px; box-shadow: 0 8px 25px rgba(0,64,133,0.12); border: 2px solid rgba(0,64,133,0.1);`;
+
         deptContainer.innerHTML = `
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
             <h2 style="color: var(--primary); margin: 0; font-size: 24px; font-weight: 700;">👥 ${dept} Faculty</h2>
@@ -794,10 +784,9 @@ viewDbBtn.onclick = async () => {
         }
 
         deptContainer.appendChild(facultyContainer);
-        deptCard.appendChild(deptContainer);
+        dbContent.appendChild(deptContainer);
     }
     
-    dbContent.appendChild(deptCard);
     
   } catch (error) {
     console.error('Error loading data:', error);

@@ -142,6 +142,10 @@
       border-left: 4px solid #0dcaf0;
     }
     
+    .tab:nth-child(5) {
+      border-left: 4px solid #0dcaf0;
+    }
+    
     .tab:hover {
       transform: translateY(-5px);
       box-shadow: 0 8px 25px rgba(30, 64, 175, 0.2);
@@ -165,6 +169,11 @@
     .tab:nth-child(4):hover {
       background: #faf5ff;
       border-left-color: #9333ea;
+    }
+
+    .tab:nth-child(5):hover {
+      background: #f0f9ff;
+      border-left-color: #0a98b0;
     }
 
     .tab:nth-child(5):hover {
@@ -212,6 +221,7 @@
     <a href="timetable-new.htm" class="tab" id="timetableLink">📅 Timetable Generator</a>
     <a href="dashboard.htm" class="tab" id="dashboardLink">📊 Dashboard</a>
     <a href="#" class="tab" id="vaultLink">🗂️ Timetable Vault</a>
+    <a href="faculty_timetable.htm" class="tab" id="facultyTimetableLink">👨‍🏫 View My Timetable</a>
   </div>
 
   <script>
@@ -230,6 +240,7 @@
     document.getElementById('timetableLink').href = `timetable-new.htm?dept=${encodeURIComponent(dept)}`;
     document.getElementById('dashboardLink').href = `dashboard.htm?dept=${encodeURIComponent(dept)}`;
     document.getElementById('vaultLink').href = `vault.htm?dept=${encodeURIComponent(dept)}`;
+    // No dept needed for faculty page as it's personalized
   </script>
 </body>
 </html>
