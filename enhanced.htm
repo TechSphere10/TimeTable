@@ -1005,12 +1005,9 @@
             showAlert('💾 Saving timetable to database...', 'info');
 
             try {
-                // First, extract the current UI state to ensure we have data to save
                 const newEntries = [];
-                const generatedDataForSave = JSON.parse(localStorage.getItem('generatedTimetable') || '{}');
                 const sectionContainers = document.querySelectorAll('.timetable-section-container');
 
-                // If there are no new entries, abort to prevent accidental deletion of existing data.
                 if (sectionContainers.length === 0) {
                     throw new Error("No timetable sections found in the UI to save.");
                 }
@@ -1029,23 +1026,34 @@
                 sectionContainers.forEach(container => {
                     const sectionName = container.id.replace('section-container-', '');
                     container.querySelectorAll('.subject-cell[data-subject]').forEach(cell => {
-                        newEntries.push({
+                        const isLab = cell.getAttribute('colspan') === '2';
+                        const slot = parseInt(cell.dataset.slot);
+                        const blockId = cell.getAttribute('data-block-id');
+
+                        const baseEntry = {
                             department: department,
                             academic_year: academicYear,
                             year: parseInt(year),
                             semester: semester,
                             section: sectionName,
                             day: cell.dataset.day,
-                            time_slot: parseInt(cell.dataset.slot),
                             subject_code: cell.getAttribute('data-subject'),
-                            subject_name: cell.getAttribute('data-subject'), // Or fetch full name if needed
+                            subject_name: cell.getAttribute('data-subject'),
                             faculty_name: cell.getAttribute('data-faculty'),
-                            room: `Room-${sectionName}01` // Placeholder room
-                        });
+                            room: `Room-${sectionName}01`,
+                            is_lab: isLab,
+                            block_id: blockId
+                        };
+
+                        newEntries.push({ ...baseEntry, time_slot: slot });
+
+                        if (isLab) {
+                            newEntries.push({ ...baseEntry, time_slot: slot + 1 });
+                        }
                     });
                 });
 
-                // 3. Insert all new entries in a single batch
+                // Insert all new entries in a single batch
                 if (newEntries.length > 0) {
                     const { error: insertError } = await supabase.from('timetables').insert(newEntries);
                     if (insertError) throw insertError;
