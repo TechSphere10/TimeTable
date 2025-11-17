@@ -146,8 +146,8 @@
                 <ul class="stat-list" id="facultyWorkloadList"></ul>
             </div>
             <div class="card">
-                <h3>🚪 Room Utilization (Weekly Hours)</h3>
-                <ul class="stat-list" id="roomUtilizationList"></ul>
+                <h3>📊 General Statistics</h3>
+                <ul class="stat-list" id="generalStatsList"></ul>
             </div>
         </div>
     </div>
@@ -176,12 +176,22 @@
             const contentEl = document.getElementById('dashboardContent');
 
             try {
-                const { data: timetableData, error } = await supabase
-                    .from('timetables')
-                    .select('faculty_name, room')
-                    .eq('department', department);
+                // Fetch all data in parallel
+                const [
+                    { data: timetableData, error: timetableError },
+                    { data: subjectsData, error: subjectsError },
+                    { data: facultyData, error: facultyError },
+                    { data: finalizedData, error: finalizedError }
+                ] = await Promise.all([
+                    supabase.from('timetables').select('faculty_name, room').eq('department', department),
+                    supabase.from('subjects').select('id', { count: 'exact' }).eq('department', department),
+                    supabase.from('faculty').select('id', { count: 'exact' }).eq('department', department),
+                    supabase.from('timetable_status').select('id', { count: 'exact' }).eq('department', department).eq('is_finalized', true)
+                ]);
 
-                if (error) throw error;
+                if (timetableError || subjectsError || facultyError || finalizedError) {
+                    throw new Error(timetableError?.message || subjectsError?.message || facultyError?.message || finalizedError?.message);
+                }
 
                 if (!timetableData || timetableData.length === 0) {
                     loadingEl.textContent = 'No timetable data found for this department. Please generate a timetable first.';
@@ -190,11 +200,16 @@
 
                 // Calculate stats
                 const facultyWorkload = calculateWorkload(timetableData, 'faculty_name');
-                const roomUtilization = calculateWorkload(timetableData, 'room');
+                
+                const generalStats = {
+                    totalSubjects: subjectsData.length,
+                    totalFaculty: facultyData.length,
+                    finalizedTimetables: finalizedData.length
+                };
 
                 // Render stats
                 renderFacultyWorkload(facultyWorkload);
-                renderRoomUtilization(roomUtilization);
+                renderGeneralStats(generalStats);
 
                 loadingEl.style.display = 'none';
                 contentEl.style.display = 'grid';
@@ -253,33 +268,22 @@
             });
         }
 
-        function renderRoomUtilization(utilization) {
-            const list = document.getElementById('roomUtilizationList');
-            list.innerHTML = '';
-
-            const sortedRooms = Object.entries(utilization).sort(([, a], [, b]) => b - a);
-
-            sortedRooms.forEach(([name, hours]) => {
-                const li = document.createElement('li');
-                const maxHours = 30; // 5 days * 6 periods
-                const percentage = Math.min((hours / maxHours) * 100, 100);
-
-                let barColor;
-                if (percentage < 30) barColor = 'var(--warning)';
-                else if (percentage > 85) barColor = 'var(--danger)';
-                else barColor = 'var(--success)';
-
-                li.innerHTML = `
-                    <span class="name">${name}</span>
-                    <div style="display: flex; align-items: center; gap: 15px;">
-                        <div class="workload-bar-container" title="${hours} hours">
-                            <div class="workload-bar" style="width: ${percentage}%; background-color: ${barColor};"></div>
-                        </div>
-                        <span class="value">${hours}h</span>
-                    </div>
-                `;
-                list.appendChild(li);
-            });
+        function renderGeneralStats(stats) {
+            const list = document.getElementById('generalStatsList');
+            list.innerHTML = `
+                <li>
+                    <span class="name">📚 Total Subjects</span>
+                    <span class="value">${stats.totalSubjects}</span>
+                </li>
+                <li>
+                    <span class="name">👨‍🏫 Total Faculty</span>
+                    <span class="value">${stats.totalFaculty}</span>
+                </li>
+                <li>
+                    <span class="name">✅ Finalized Timetables</span>
+                    <span class="value">${stats.finalizedTimetables}</span>
+                </li>
+            `;
         }
     </script>
 </body>

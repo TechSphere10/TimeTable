@@ -444,35 +444,122 @@
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
-            // config.js is loaded before this script, so BACKEND_URL and supabase are available
-            loadTimetableData();
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('view') === 'true') {
+                // --- VIEW MODE ---
+                console.log('Running in View-Only Mode');
+                document.getElementById('loadingOverlay').style.display = 'flex';
+                document.getElementById('loadingText').innerText = 'Loading Finalized Timetable...';
+                loadTimetableForViewing(urlParams);
+            } else {
+                // --- GENERATOR MODE ---
+                console.log('Running in Generator Mode');
+                loadTimetableForGeneration();
+            }
         });
 
-        async function loadTimetableData() {
+        async function loadTimetableForViewing(urlParams) {
+            const dept = urlParams.get('dept');
+            const ay = urlParams.get('ay');
+            const yr = urlParams.get('yr');
+            const sem = urlParams.get('sem');
+
+            if (!dept || !ay || !yr || !sem) {
+                showAlert('❌ Invalid timetable parameters in URL.', 'danger');
+                document.getElementById('loadingOverlay').style.display = 'none';
+                return;
+            }
+
+            // 1. Lock down the UI for viewing
+            document.querySelectorAll('.btn-generate, .btn-swap, .btn-save, [onclick="finalizeTimetable()"]').forEach(btn => {
+                btn.style.display = 'none';
+            });
+            const backButton = document.querySelector('.btn-back');
+            if (backButton) {
+                backButton.onclick = () => window.location.href = 'vault.htm';
+            }
+
+            // 2. Fetch the data from Supabase
+            try {
+                const { data, error } = await supabase
+                    .from('timetables')
+                    .select('*')
+                    .eq('department', dept)
+                    .eq('academic_year', ay)
+                    .eq('year', yr)
+                    .eq('semester', sem);
+
+                if (error) throw error;
+                if (!data || data.length === 0) {
+                    showAlert('❌ No saved timetable found for these parameters.', 'danger');
+                    document.getElementById('loadingOverlay').style.display = 'none';
+                    return;
+                }
+
+                // 3. Restructure the data for our rendering functions
+                const { restructuredData, sections } = restructureFetchedData(data);
+                
+                // Create a minimal timetableData object for the rendering functions
+                timetableData = {
+                    department: dept,
+                    academicYear: ay,
+                    year: yr,
+                    semester: sem,
+                    sections: sections.map(s => ({ name: s }))
+                };
+                isFinalized = true; // It's a finalized view
+
+                // 4. Render the timetable
+                generateTimetableStructure();
+                applyAllGeneratedTimetables(restructuredData);
+                
+                showAlert('✅ Finalized timetable loaded.', 'success');
+
+            } catch (err) {
+                console.error('Error loading timetable for viewing:', err);
+                showAlert(`❌ Could not load timetable: ${err.message}`, 'danger');
+            } finally {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }
+        }
+
+        function restructureFetchedData(flatData) {
+            const restructured = {};
+            const sectionSet = new Set();
+
+            flatData.forEach(entry => {
+                sectionSet.add(entry.section);
+                if (!restructured[entry.section]) {
+                    restructured[entry.section] = {};
+                }
+                if (!restructured[entry.section][entry.day]) {
+                    restructured[entry.section][entry.day] = {};
+                }
+                restructured[entry.section][entry.day][entry.time_slot] = {
+                    subject_code: entry.subject_code,
+                    subject_name: entry.subject_name,
+                    faculty_name: entry.faculty_name,
+                    block_id: entry.block_id,
+                    is_lab: entry.is_lab
+                };
+            });
+            
+            const sections = Array.from(sectionSet).sort();
+            return { restructuredData: restructured, sections };
+        }
+
+        async function loadTimetableForGeneration() {
             const storedData = localStorage.getItem('timetableData');
             const generatedTimetableData = localStorage.getItem('generatedTimetable');
 
-            console.log('=== Loading Timetable Data ===');
-            console.log('Stored data exists:', !!storedData);
-            console.log('Generated data exists:', !!generatedTimetableData);
-
             if (!storedData) {
-                console.error('No timetable data found in localStorage');
-                showAlert('❌ No timetable data. Please go back to timetable-new.htm and set up first.', 'danger');
-                // If no setup data, disable generation button
-                const generateBtn = document.querySelector('.btn-generate');
-                if (generateBtn) {
-                    generateBtn.disabled = true;
-                }
+                showAlert('❌ No setup data found. Please go to the setup page first.', 'danger');
+                document.querySelector('.btn-generate').disabled = true;
                 return;
             }
 
             try {
                 timetableData = JSON.parse(storedData);
-                console.log('Timetable data loaded:', timetableData);
-                console.log('Department:', timetableData.department);
-                console.log('Sections:', timetableData.sections?.map(s => s.name).join(', '));
-                
                 localStorage.setItem('department', timetableData.department);
                 localStorage.setItem('currentSection', timetableData.sections?.[0]?.name || 'A');
                 
@@ -480,17 +567,14 @@
                 await checkFinalizedStatus();
                 generateTimetableStructure();
 
-                // If generated timetable exists, apply it
                 if (generatedTimetableData) {
-                    console.log('Applying previously generated timetable from localStorage.');
                     const generatedTimetables = JSON.parse(generatedTimetableData);
                     applyAllGeneratedTimetables(generatedTimetables);
                 } else {
-                    console.log('No generated timetable found. Ready to generate.');
-                    showAlert('👉 Click "Generate Timetable" button to create timetable', 'info');
+                    showAlert('👉 Click "Generate Timetable" to begin.', 'info');
                 }
             } catch (error) {
-                console.error('Error loading timetable data:', error);
+                console.error('Error loading timetable data for generation:', error);
                 showAlert('❌ Error loading data. Please go back and try again.', 'danger');
             }
         }
@@ -750,55 +834,59 @@
             }
         }
 
-        
         function applyTimetableToSection(sectionName, generatedTimetable, sectionIndex) {
             const sectionContainer = document.getElementById(`section-container-${sectionName}`);
             if (!sectionContainer) {
                 console.error(`Could not find container for section ${sectionName}`);
                 return;
             }
-
+        
             console.log(`Applying timetable to section ${sectionName}`);
-            console.log('Timetable data:', generatedTimetable);
-
+        
             // Clear existing cells
             sectionContainer.querySelectorAll('.subject-cell').forEach(cell => {
                 cell.innerHTML = '';
                 cell.style.backgroundColor = '';
                 cell.style.opacity = '0';
+                cell.style.display = ''; // Reset display property
+                cell.removeAttribute('colspan'); // Reset colspan
                 cell.removeAttribute('data-subject');
                 cell.removeAttribute('data-faculty');
+                cell.removeAttribute('data-block-id');
             });
-
+        
             // Validate timetable data
             if (!generatedTimetable || typeof generatedTimetable !== 'object') {
                 console.error('Invalid timetable data for section', sectionName);
                 showAlert(`❌ Invalid timetable data for section ${sectionName}`, 'danger');
                 return;
             }
-
+        
             let cellsPopulated = 0;
-
+        
             // Populate cells with generated data
             Object.keys(generatedTimetable).forEach(day => {
                 const daySlots = generatedTimetable[day];
-                if (!daySlots) {
-                    console.warn(`No slots data for ${day} in section ${sectionName}`);
-                    return;
-                }
-
-                // The backend sends an object with integer keys, which JSON stringifies to string keys.
-                // Or it might be an array-like object. Iterating with a for loop is safest.
+                if (!daySlots) return;
+        
                 for (let slotId = 0; slotId < 6; slotId++) {
-                    const entry = daySlots[slotId] || daySlots[String(slotId)]; // Robustly access the slot data
-                    if (!entry) continue;
-
+                    const entry = daySlots[slotId] || daySlots[String(slotId)];
                     const cell = sectionContainer.querySelector(`[data-day="${day}"][data-slot="${String(slotId)}"]`);
-                    if (cell) {
+        
+                    if (cell && entry) {
+                        const isLab = entry.is_lab || false;
+        
+                        // --- DEFINITIVE VISUAL MERGE LOGIC ---
+                        if (isLab && entry.block_id && daySlots[slotId + 1]?.block_id === entry.block_id) {
+                            cell.setAttribute('colspan', '2');
+                            const nextCell = sectionContainer.querySelector(`[data-day="${day}"][data-slot="${String(slotId + 1)}"]`);
+                            if (nextCell) nextCell.style.display = 'none';
+                        }
+        
                         const facultyName = entry.faculty_name || '';
                         const facultyInitials = facultyName.split(' ').map(n => n[0] || '').join('');
                         const subjectCode = entry.subject_code || entry.subject_name || '';
-                        const isLab = entry.is_lab || false;
+                        const blockId = entry.block_id || null;
                         
                         cell.innerHTML = `
                             <div style="font-weight: bold; font-size: 11px; margin-bottom: 2px; color: #1e40af;">${subjectCode}</div>
@@ -807,15 +895,18 @@
                         cell.style.backgroundColor = getSubjectColor(subjectCode);
                         cell.setAttribute('data-subject', subjectCode);
                         cell.setAttribute('data-faculty', facultyName);
-
+                        if (blockId) cell.setAttribute('data-block-id', blockId);
+        
                         const delay = (days.indexOf(day) * 6 + slotId) * 0.03;
-                        // Animate cell appearance
                         cell.style.animationDelay = `${delay}s`;
                         cell.style.opacity = '1';
                         
                         cellsPopulated++;
-                    } else {
-                        console.warn(`Cell not found for ${day} slot ${slotId}`);
+        
+                        // If it was a lab, skip the next slot since we've merged it
+                        if (isLab && daySlots[slotId + 1]?.block_id === entry.block_id) {
+                            slotId++;
+                        }
                     }
                 }
             });
@@ -900,13 +991,13 @@
             }
         }
 
-        async function saveTimetable() {
+        async function saveTimetable(suppressConfirmation = false) {
             if (isFinalized) {
                 showAlert('🔒 This timetable is finalized and cannot be saved again.', 'warning');
                 return;
             }
 
-            if (!confirm('Are you sure you want to save this timetable to the database? This will overwrite any previously saved version for this semester.')) {
+            if (!suppressConfirmation && !confirm('Are you sure you want to save this timetable to the database? This will overwrite any previously saved version for this semester.')) {
                 return;
             }
 
@@ -916,6 +1007,7 @@
             try {
                 // First, extract the current UI state to ensure we have data to save
                 const newEntries = [];
+                const generatedDataForSave = JSON.parse(localStorage.getItem('generatedTimetable') || '{}');
                 const sectionContainers = document.querySelectorAll('.timetable-section-container');
 
                 // If there are no new entries, abort to prevent accidental deletion of existing data.
@@ -940,7 +1032,7 @@
                         newEntries.push({
                             department: department,
                             academic_year: academicYear,
-                            year: year,
+                            year: parseInt(year),
                             semester: semester,
                             section: sectionName,
                             day: cell.dataset.day,
@@ -1010,16 +1102,38 @@
             const currentSubject = cell.getAttribute('data-subject');
             const currentFaculty = cell.getAttribute('data-faculty');
             
+            // --- NEW: PREVENT SWAPPING LABS ---
+            const isLab = cell.innerHTML.includes('(Lab)');
+            if (isLab) {
+                showAlert('❌ Swapping lab blocks is disabled to maintain schedule integrity.', 'warning');
+                return;
+            }
+
             if (!selectedCell) {
-                // First click - select period to change
-                selectedCell = { cell, day, slot, subject: currentSubject, faculty: currentFaculty };
-                cell.classList.add('selected');
+                // --- NEW: LAB-AWARE SELECTION ---
+                const isLab = cell.innerHTML.includes('(Lab)');
+                let cellsToSelect = [cell];
+                let slotsToSelect = [slot];
+
+                if (isLab) {
+                    const otherSlot = (slot % 2 === 0) ? slot + 1 : slot - 1;
+                    const otherCell = sectionContainer.querySelector(`[data-day="${day}"][data-slot="${otherSlot}"]`);
+                    if (otherCell) {
+                        cellsToSelect.push(otherCell);
+                        slotsToSelect.push(otherSlot);
+                    }
+                }
+
+                selectedCell = { cells: cellsToSelect, day, slots: slotsToSelect, subject: currentSubject, faculty: currentFaculty, isLab };
+                cellsToSelect.forEach(c => c.classList.add('selected'));
                 
                 findAndHighlightSafeSwaps(selectedCell, currentSectionName);
-                showAlert('✅ Now click a GREEN period to swap', 'success');
+                showAlert(`✅ ${isLab ? 'Lab block' : 'Period'} selected. Click a GREEN period/block to swap.`, 'success');
             } else {
                 // Second click - perform swap
-                if (cell.classList.contains('alternative')) {
+                const isTargetLab = cell.innerHTML.includes('(Lab)');
+                // Ensure we are swapping like-for-like (lab for lab, theory for theory) or with an empty slot
+                if (cell.classList.contains('alternative') && selectedCell.isLab === isTargetLab) {
                     performSafeSwap(selectedCell, { day, slot, cell }, currentSectionName);
                     showAlert('✅ Swap completed!', 'success');
                     toggleSwapMode(); // Exit swap mode
@@ -1299,6 +1413,9 @@
                 return;
             }
 
+            // First, save the current state to ensure what's on screen is what gets finalized.
+            await saveTimetable(true); // Pass a flag to suppress confirmation
+
             const { department, academicYear, year, semester } = timetableData;
 
             try {
@@ -1325,7 +1442,12 @@
         }
 
         function lockUIForFinalization() {
-            document.querySelectorAll('.btn-generate, .btn-swap, [onclick="finalizeTimetable()"]').forEach(btn => btn.disabled = true);
+            // Disable all modification buttons
+            document.querySelectorAll('.btn-generate, .btn-swap, [onclick="finalizeTimetable()"], .btn-save').forEach(btn => {
+                btn.disabled = true;
+                btn.style.opacity = '0.6';
+                btn.style.cursor = 'not-allowed';
+            });
             generateTimetableStructure(); // Regenerate structure to show the badge
         }
     </script>
